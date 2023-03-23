@@ -10,15 +10,14 @@ pipeline{
     stages{
         stage('git clone'){
             steps{
-                sh 'mkdir TablesService && cd TablesService'
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
                 sh 'pwd'
                 sh 'ls -alF'
 
-                sh 'cd .. && mkdir Restaurant-k8s-components && cd Restaurant-k8s-components'
-                git branch: "master", url:"https://github.com/bconnelly/Restaurant-k8s-components.git"
-                sh 'pwd'
-                sh 'ls -alF'
+//                 sh 'cd .. && mkdir Restaurant-k8s-components && cd Restaurant-k8s-components'
+//                 git branch: "master", url:"https://github.com/bconnelly/Restaurant-k8s-components.git"
+//                 sh 'pwd'
+//                 sh 'ls -alF'
             }
         }
         stage('maven build and test'){
