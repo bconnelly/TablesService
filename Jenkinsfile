@@ -11,13 +11,24 @@ pipeline{
     stages{
         stage('git clone'){
             steps{
-//                 cleanWs()
-                sh 'pwd'
-                sh 'ls -alF'
-                git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
-                sh 'pwd'
-                sh 'ls -alF'
+                sh '''
+                pwd
+                ls -alF
+                git clone https://github.com/bconnelly/TablesService.git
 
+                pwd
+                ls -alF
+                git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+
+                pwd
+                ls -alF
+                exit 1
+                '''
+
+//                 cleanWs()
+//                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
+//                 sh 'pwd'
+//                 sh 'ls -alF'
 //                 sh 'cd .. && mkdir Restaurant-k8s-components && cd Restaurant-k8s-components'
 //                 git branch: "master", url:"https://github.com/bconnelly/Restaurant-k8s-components.git"
 //                 sh 'pwd'
