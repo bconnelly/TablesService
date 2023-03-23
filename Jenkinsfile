@@ -8,14 +8,10 @@ pipeline{
             alwaysPull true
         }
     }
-    options{
-        skipDefaultCheckout(true)
-    }
-
     stages{
         stage('git clone'){
             steps{
-                cleanWs()
+//                 cleanWs()
                 sh 'pwd'
                 sh 'ls -alF'
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
@@ -69,9 +65,19 @@ pipeline{
                     sh '''
                         if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
                     '''
-
                 }
             }
+        }
+    }
+    post{
+        always{
+
+//             cleanWs(cleanWhenNotBuilt: false,
+//                     deleteDirs: true,
+//                     disableDeferredWipeout: true,
+//                     notFailBuild: true,
+//                     pattern: [[pattern: '.gitignore', type: 'INCLUDE'],
+//                               [pattern: ]])
         }
     }
 }
