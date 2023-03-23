@@ -7,17 +7,6 @@ pipeline{
         }
     }
     stages{
-//        stage('experimenting'){
-//            steps{
-//                sh '''
-//                    echo "JOB_NAME: ${JOB_NAME}"
-//                    exit 1
-//                '''
-//                    cat /etc/*-release
-//                    echo $PATH
-//                    exit 1
-//         }
-//     }
         stage('git clone'){
             steps{
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
