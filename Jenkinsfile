@@ -21,13 +21,13 @@ pipeline{
             steps{
                 echo 'Packaging and testing:'
                 sh 'pwd'
-                sh 'mvn -f TableService/ verify'
+                sh 'mvn -f verify'
             }
         }
         stage('build docker images'){
             steps{
                 sh '''
-                    docker build -t bryan949/fullstack-tables TablesService/
+                    docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
                 '''
             }
