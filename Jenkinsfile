@@ -12,9 +12,9 @@ pipeline{
         stage('git clone'){
             steps{
                 sh '''
-                pwd
-                ls -alF
-                exit 1
+                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+                    pwd
+                    ls -alF
                 '''
 
 //                 pwd
@@ -80,15 +80,20 @@ pipeline{
             }
         }
     }
-//     post{
-//         always{
-//
-//             cleanWs(cleanWhenNotBuilt: false,
-//                     deleteDirs: true,
-//                     disableDeferredWipeout: true,
-//                     notFailBuild: true,
+    post{
+        always{
+
+            cleanWs(cleanWhenAborted: true,
+                    cleanWhenFailure: true,
+                    cleanWhenNotBuilt: true,
+                    cleanWhenSuccess: true,
+                    cleanWhenUnstable: true,
+                    cleanupMatrixParent: true,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true
 //                     pattern: [[pattern: '.gitignore', type: 'INCLUDE'],
-//                               [pattern: ]])
-//         }
-//     }
+//                               [pattern: ]]
+            )
+        }
+    }
 }
