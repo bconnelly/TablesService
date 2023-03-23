@@ -1,10 +1,10 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/restaurant-service:0.1'
+            image 'bryan949/fullstack-agent:0.1'
             args '-v /root/.m2:/root/.m2 \
             -v /root/jenkins/restaurant-resources/k8s-components:/root/jenkins/restaurant-resources/k8s-components \
-             --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + ' --env AWS_ACCESS_KEY_ID=' + env.AWS_ACCESS_KEY_ID + ' --env AWS_SECRET_ACCESS_KEY=' + env.AWS_SECRET_ACCESS_KEY
+             --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE// + ' --env AWS_ACCESS_KEY_ID=' + env.AWS_ACCESS_KEY_ID + ' --env AWS_SECRET_ACCESS_KEY=' + env.AWS_SECRET_ACCESS_KEY
             alwaysPull true
         }
     }
@@ -66,7 +66,7 @@ pipeline{
                     echo fileString
                     def files = fileString.split("\n")
                     for(file in files){
-                        sh 'yq e \\\'.metadata.namespace = \\"preprod\\" \\\'$file\\\''
+                        sh 'yq e \\\'.metadata.namespace = \\"dev\\" \\\'$file\\\''
                     }
 //                yq e '.metadata.namespace = "dev"' $file
                     sh '''
