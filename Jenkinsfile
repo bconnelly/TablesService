@@ -20,6 +20,7 @@ pipeline{
         stage('maven build and test'){
             steps{
                 echo 'Packaging and testing:'
+                sh 'pwd'
                 sh 'mvn -f TableService/ verify'
             }
         }
