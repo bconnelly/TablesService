@@ -11,6 +11,9 @@ pipeline{
     stages{
         stage('git clone'){
             steps{
+                cleanWs()
+                sh 'pwd'
+                sh 'ls -alF'
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
                 sh 'pwd'
                 sh 'ls -alF'
@@ -49,7 +52,7 @@ pipeline{
             steps{
                 script{
                     def fileString = sh(script: 'find k8s-components -type f', returnStdout: true)
-                    echo filestring
+                    echo fileString
                     def files = fileString.split("\n")
                     for(file in files){
                         sh 'yq e \\\'.metadata.namespace = \\"preprod\\" \\\'$file\\\''
