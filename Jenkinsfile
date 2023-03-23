@@ -12,6 +12,7 @@ pipeline{
         stage('git clone'){
             steps{
                 sh '''
+                    docker version
                     git clone https://github.com/bconnelly/Restaurant-k8s-components.git
                     pwd
                     ls -alF
