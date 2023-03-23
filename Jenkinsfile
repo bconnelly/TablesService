@@ -11,8 +11,9 @@ pipeline{
         stage('git clone'){
             steps{
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
-                sh 'pwd'
+                sh 'pwd && cd ..'
                 sh 'ls -alF'
+
                 git branch: "master", url:"https://github.com/bconnelly/Restaurant-k8s-components.git"
                 sh 'pwd'
                 sh 'ls -alF'
