@@ -69,15 +69,15 @@ pipeline{
             }
         }
     }
-    post{
-        always{
-
+//     post{
+//         always{
+//
 //             cleanWs(cleanWhenNotBuilt: false,
 //                     deleteDirs: true,
 //                     disableDeferredWipeout: true,
 //                     notFailBuild: true,
 //                     pattern: [[pattern: '.gitignore', type: 'INCLUDE'],
 //                               [pattern: ]])
-        }
-    }
+//         }
+//     }
 }
