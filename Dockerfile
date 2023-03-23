@@ -7,7 +7,7 @@ ENV KOPS_STATE_STORE=${KOPS_STATE_STORE}
 ENV M2_HOME=/opt/apache-maven-3.9.0
 ENV MAVEN_OPTS="-Xms256m -Xmx512m"
 
-RUN mkdir -p /root/jenkins/restaurant-resources
+COPY k8s-components/ /root/jenkins/restaurant-resources/k8s-components/
 COPY TableService/tomcat-users.xml /root/jenkins/restaurant-resources/
 COPY TableService/context.xml /root/jenkins/restaurant-resources/
 COPY TableService/server.xml /root/jenkins/restaurant-resources/
