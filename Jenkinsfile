@@ -14,16 +14,16 @@ pipeline{
                 sh '''
                 pwd
                 ls -alF
-                git clone https://github.com/bconnelly/TablesService.git
-
-                pwd
-                ls -alF
-                git clone https://github.com/bconnelly/Restaurant-k8s-components.git
-
-                pwd
-                ls -alF
                 exit 1
                 '''
+
+//                 pwd
+//                 ls -alF
+//                 git clone https://github.com/bconnelly/TablesService.git
+//
+//                 pwd
+//                 ls -alF
+//                 git clone https://github.com/bconnelly/Restaurant-k8s-components.git
 
 //                 cleanWs()
 //                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
