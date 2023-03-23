@@ -7,6 +7,9 @@ pipeline{
              --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + ' --env AWS_ACCESS_KEY_ID=' + env.AWS_ACCESS_KEY_ID + ' --env AWS_SECRET_ACCESS_KEY=' + env.AWS_SECRET_ACCESS_KEY
             alwaysPull true
         }
+        options{
+            skipDefaultCheckout(true)
+        }
     }
     stages{
         stage('git clone'){
