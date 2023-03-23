@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/full-restaurant:0.1.2'
+            image 'bryan949/restaurant-service:0.1'
             args '-v /root/.m2:/root/.m2 --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + ' --env AWS_ACCESS_KEY_ID=' + env.AWS_ACCESS_KEY_ID + ' --env AWS_SECRET_ACCESS_KEY=' + env.AWS_SECRET_ACCESS_KEY
             alwaysPull true
         }
@@ -16,8 +16,8 @@ pipeline{
 //                    cat /etc/*-release
 //                    echo $PATH
 //                    exit 1
-           }
-      }
+//         }
+//     }
         stage('git clone'){
             steps{
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
@@ -43,12 +43,12 @@ pipeline{
             }
         }
         stage('configure cluster connection'){
-        steps{
-    	    sh '''
-	            kops export kubecfg --admin --name fullstack.k8s.local
-	            if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
-	            kubectl config set-context --current --namespace preprod
-	        '''
+            steps{
+    	        sh '''
+	                kops export kubecfg --admin --name fullstack.k8s.local
+	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+	                kubectl config set-context --current --namespace preprod
+	            '''
             }
         }
         stage('deploy services to cluster'){
@@ -59,19 +59,19 @@ pipeline{
                     def files = fileString.split("\n")
                     for(file in files){
                         sh 'yq e \\\'.metadata.namespace = \\"preprod\\" \\\'$file\\\''
-                    }
-                }
+
+
 
 //                yq e '.metadata.namespace = "dev"' $file
-                sh '''
-                    sh 'kubectl apply -f /root/jenkins/fullstack-secrets.yaml'
-                    sh 'kubectl apply -f k8s-components/ --recursive'
-                '''
-                sh '''
-                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
-                '''
+                    sh '''
+                        sh 'kubectl apply -f /root/jenkins/fullstack-secrets.yaml'
+                        sh 'kubectl apply -f k8s-components/ --recursive'
+                    '''
+                    sh '''
+                        if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                    '''
+                }
             }
         }
     }
 }
-
