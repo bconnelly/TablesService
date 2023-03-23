@@ -38,7 +38,7 @@ pipeline{
         stage('maven build and test'){
             steps{
                 echo 'Packaging and testing:'
-                sh 'pwd'
+                sh 'pwd && ls -alF'
                 sh 'mvn verify'
             }
         }

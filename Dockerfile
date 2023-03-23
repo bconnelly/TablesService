@@ -1,27 +1,16 @@
-FROM bentolor/docker-dind-awscli:dind
+FROM eclipse-temurin:17.0.6_10-jdk
+SHELL ["/bin/bash", "-c"]
 
-ENV KOPS_STATE_STORE=${KOPS_STATE_STORE}
-#ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-#ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+RUN wget https://downloads.apache.org/tomcat/tomcat-10/v10.1.5/bin/apache-tomcat-10.1.5.tar.gz && \
+    tar -xf apache-tomcat-10.1.5.tar.gz -C /opt/tomcat && \
+    rm apache-tomcat-10.1.5.tar.gz && \
+    chown -R tomcat: /opt/tomcat
 
-ENV M2_HOME=/opt/apache-maven-3.9.0
-ENV MAVEN_OPTS="-Xms256m -Xmx512m"
+ADD TablesService.war /opt/tomcat/apache-tomcat-10.1.5/webapps
+COPY tomcat-users.xml /opt/tomcat/apache-tomcat-10.1.5/conf
+COPY context.xml /opt/tomcat/apache-tomcat-10.1.5/webapps/manager/META-INF
+COPY server.xml /opt/tomcat/apache-tomcat-10.1.5/conf
 
-COPY k8s-components/ /root/jenkins/restaurant-resources/k8s-components/
-COPY TableService/tomcat-users.xml /root/jenkins/restaurant-resources/
-COPY TableService/context.xml /root/jenkins/restaurant-resources/
-COPY TableService/server.xml /root/jenkins/restaurant-resources/
+RUN echo "0" > healthy
 
-RUN apk add maven curl git
-
-#install kops
-RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64 && \
-	chmod +x kops && mv kops /usr/local/bin/kops
-
-#install kubectl
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-	install -o root -m 0755 kubectl /usr/local/bin
-
-RUN rm -rf /var/cache/apk/*
-
-CMD ["/bin/echo", "complete"]
+CMD ["/opt/tomcat/apache-tomcat-10.1.5/bin/catalina.sh", "run"]
