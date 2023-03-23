@@ -7,25 +7,14 @@ pipeline{
         }
     }
     stages{
-//        stage('experimenting'){
-//            steps{
-//                sh '''
-//                    echo "JOB_NAME: ${JOB_NAME}"
-//                    exit 1
-//                '''
-//                    cat /etc/*-release
-//                    echo $PATH
-//                    exit 1
-//         }
-//     }
         stage('git clone'){
             steps{
                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
-                sh '''
-                    cp /root/jenkins/restaurant-resources/tomcat-users.xml .
-                    cp /root/jenkins/restaurant-resources/context.xml .
-                    cp /root/jenkins/restaurant-resources/server.xml .
-                '''
+//                 sh '''
+//                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
+//                     cp /root/jenkins/restaurant-resources/context.xml .
+//                     cp /root/jenkins/restaurant-resources/server.xml .
+//                 '''
             }
         }
         stage('maven build and test'){
@@ -60,8 +49,6 @@ pipeline{
                     for(file in files){
                         sh 'yq e \\\'.metadata.namespace = \\"preprod\\" \\\'$file\\\''
 
-
-
 //                yq e '.metadata.namespace = "dev"' $file
                     sh '''
                         sh 'kubectl apply -f /root/jenkins/fullstack-secrets.yaml'
@@ -74,4 +61,5 @@ pipeline{
             }
         }
     }
+}
 }
