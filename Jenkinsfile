@@ -19,8 +19,9 @@ pipeline{
                 echo 'Packaging and testing:'
                 sh '''
                     mvn verify
+                    ls -alF
                 '''
-                stash includes: '*.war', name: 'war'
+                stash includes: 'TablesService.war', name: 'war'
 
             }
         }
