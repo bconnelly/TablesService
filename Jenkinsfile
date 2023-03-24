@@ -51,6 +51,7 @@ pipeline{
         stage('build docker images'){
             steps{
                 sh '''
+                sh 'ls -alF'
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
                 '''
