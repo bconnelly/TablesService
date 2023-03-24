@@ -19,14 +19,15 @@ pipeline{
                 echo 'Packaging and testing:'
                 sh '''
                     mvn verify
-                    stash includes: *.war, name: war
                 '''
+                stash includes: '*.war', name: 'war'
+
             }
         }
         stage('build docker images'){
             steps{
                 sh '''
-                sh 'ls -alF'
+                   ls -alF
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
