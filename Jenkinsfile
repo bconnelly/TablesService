@@ -21,14 +21,14 @@ pipeline{
                     mvn verify
                     ls -alF
                 '''
-                stash includes: 'TablesService.war', name: 'war'
+                stash includes: 'target/TablesService.war', name: 'war'
 
             }
         }
         stage('build docker images'){
             steps{
                 sh '''
-                   ls -alF
+                    ls -alF
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
