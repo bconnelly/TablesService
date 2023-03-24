@@ -14,44 +14,22 @@ pipeline{
         }
     }
     stages{
-        stage('git clone'){
-            steps{
-                sh '''
-                    docker version
-                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git
-                    pwd
-                    ls -alF
-                '''
-
-//                 pwd
-//                 ls -alF
-//                 git clone https://github.com/bconnelly/TablesService.git
-//
-//                 pwd
-//                 ls -alF
-//                 git clone https://github.com/bconnelly/Restaurant-k8s-components.git
-
-//                 cleanWs()
-//                 git branch: "master", url: "https://github.com/bconnelly/TablesService.git"
-//                 sh 'pwd'
-//                 sh 'ls -alF'
-//                 sh 'cd .. && mkdir Restaurant-k8s-components && cd Restaurant-k8s-components'
-//                 git branch: "master", url:"https://github.com/bconnelly/Restaurant-k8s-components.git"
-//                 sh 'pwd'
-//                 sh 'ls -alF'
-            }
-        }
-        stage('maven build and test'){
+        stage('maven build and test, docker build and push'){
             steps{
                 echo 'Packaging and testing:'
-                sh 'pwd && ls -alF'
-                sh 'mvn verify'
+                sh '''
+                    mvn verify
+                    stash includes: *.war, name: war
+                '''
             }
         }
         stage('build docker images'){
             steps{
                 sh '''
                 sh 'ls -alF'
+                    cp /root/jenkins/restaurant-resources/tomcat-users.xml .
+                    cp /root/jenkins/restaurant-resources/context.xml .
+                    cp /root/jenkins/restaurant-resources/server.xml .
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
                 '''
@@ -60,6 +38,7 @@ pipeline{
         stage('configure cluster connection'){
             steps{
     	        sh '''
+    	            ls -alF
 	                kops export kubecfg --admin --name fullstack.k8s.local
 	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
 	                kubectl config set-context --current --namespace preprod
