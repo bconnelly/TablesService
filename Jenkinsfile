@@ -56,7 +56,7 @@ pipeline{
                         git clone https://github.com/bconnelly/Restaurant-k8s-components.git
                     '''
 
-                    def fileString = sh(script: 'find Restaurant-k8s-components -type f', returnStdout: true)
+                    def fileString = sh(script: 'find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/.git -prune -o -name *.yaml -print', returnStdout: true)
                     echo fileString
                     def files = fileString.split("\n")
                     for(file in files){
