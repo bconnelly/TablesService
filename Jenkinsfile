@@ -52,16 +52,16 @@ pipeline{
         stage('deploy services to cluster'){
             steps{
                 script{
+                    sh '''
+                        git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+                    '''
+
                     def fileString = sh(script: 'find k8s-components -type f', returnStdout: true)
                     echo fileString
                     def files = fileString.split("\n")
                     for(file in files){
                         sh 'yq e \\\'.metadata.namespace = \\"dev\\" \\\'$file\\\''
                     }
-
-                    sh '''
-                        git clone https://github.com/bconnelly/Restaurant-k8s-components.git
-                    '''
 
                     sh '''
                         sh 'kubectl apply -f /root/jenkins/fullstack-secrets.yaml'
