@@ -58,10 +58,14 @@ pipeline{
                     for(file in files){
                         sh 'yq e \\\'.metadata.namespace = \\"dev\\" \\\'$file\\\''
                     }
-//                yq e '.metadata.namespace = "dev"' $file
+
+                    sh '''
+                        git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+                    '''
+
                     sh '''
                         sh 'kubectl apply -f /root/jenkins/fullstack-secrets.yaml'
-                        sh 'kubectl apply -f k8s-components/ --recursive'
+                        sh 'kubectl apply -f Restaurant-k8s-components/ --recursive'
                     '''
                     sh '''
                         if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
