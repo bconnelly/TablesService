@@ -60,6 +60,7 @@ pipeline{
                     sh '''
                         kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
                         kubectl apply -f Restaurant-k8s-components/ --recursive
+                        kubectl get deployment
                         kubectl rollout restart deployment tables-deployment
                     '''
                     sh '''
@@ -68,7 +69,7 @@ pipeline{
                 }
             }
         }
-        stage('testing updated cluster'){
+        stage('integration testing'){
             steps{
                 script{
                     sh '''
