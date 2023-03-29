@@ -15,7 +15,6 @@ pipeline{
             steps{
                 echo 'Packaging and testing:'
                 sh '''
-                    yq
                     mvn verify
                     ls -alF
                 '''
@@ -41,7 +40,7 @@ pipeline{
     	            ls -alF
 	                kops export kubecfg --admin --name fullstack.k8s.local
 	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
-	                kubectl config set-context --current --namespace preprod
+	                kubectl config set-context --current --namespace dev
 	            '''
             }
         }
