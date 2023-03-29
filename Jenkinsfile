@@ -1,17 +1,12 @@
 pipeline{
     agent{
         docker{
-//             image 'docker:dind'
-//             args '-v /root/.m2:/root/.m2 \
-//                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
-//                   --privileged -d --name dind-agent'
             image 'bryan949/fullstack-agent:0.1'
             args '-v /root/.m2:/root/.m2 \
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + \
                   ' --env DOCKER_USER=' + env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS
-                  // + ' --env AWS_ACCESS_KEY_ID=' + env.AWS_ACCESS_KEY_ID + ' --env AWS_SECRET_ACCESS_KEY=' + env.AWS_SECRET_ACCESS_KEY
             alwaysPull true
         }
     }
@@ -20,6 +15,7 @@ pipeline{
             steps{
                 echo 'Packaging and testing:'
                 sh '''
+                    yq
                     mvn verify
                     ls -alF
                 '''
@@ -52,9 +48,7 @@ pipeline{
         stage('deploy services to cluster'){
             steps{
                 script{
-                    sh '''
-                        git clone https://github.com/bconnelly/Restaurant-k8s-components.git
-                    '''
+                    sh 'git clone https://github.com/bconnelly/Restaurant-k8s-components.git'
 
                     def fileString = sh(script: 'find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/.git -prune -o -name *.yaml -print', returnStdout: true)
                     echo fileString
@@ -74,6 +68,14 @@ pipeline{
                 }
             }
         }
+        stage('cleanup'){
+            steps{
+                script{
+                    sh 'docker rmi bryan949/fullstack-tables'
+                    sh 'docker image prune'
+                }
+            }
+        }
     }
     post{
         always{
@@ -86,8 +88,6 @@ pipeline{
                     cleanupMatrixParent: true,
                     deleteDirs: true,
                     disableDeferredWipeout: true
-//                     pattern: [[pattern: '.gitignore', type: 'INCLUDE'],
-//                               [pattern: ]]
             )
         }
     }
