@@ -60,9 +60,19 @@ pipeline{
                     sh '''
                         kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
                         kubectl apply -f Restaurant-k8s-components/ --recursive
+                        kubectl rollout restart deployment tables-deployment
                     '''
                     sh '''
                         if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                    '''
+                }
+            }
+        }
+        stage('testing updated cluster'){
+            steps{
+                script{
+                    sh '''
+
                     '''
                 }
             }
