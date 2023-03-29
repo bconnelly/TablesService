@@ -54,7 +54,6 @@ pipeline{
                     echo fileString
                     def files = fileString.split("\n")
                     for(file in files){
-                        sh 'yq'
                         sh 'yq e \'.metadata.namespace = \"dev\"\' ' + file
                     }
 
