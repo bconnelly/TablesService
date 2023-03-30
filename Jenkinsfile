@@ -72,7 +72,16 @@ pipeline{
             steps{
                 script{
                     sh '''
+                        export LOAD_BALANCER="acb6d1c82bd774ba19f49b67f1d39a1c-6b63e6a07fb802ff.elb.us-east-1.amazonaws.com"
+                        export SERVICE_PATH="RestaurantService"
+                        export CUSTOMER_NAME=$RANDOM
 
+                        if [ "$(curl -X POST --head --write-out %{http_code} --silent --output /dev/null -d \
+                        "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)" != 200 ]; then exit 1; fi
+                        if [ "$(curl --head --write-out %{http_code} --silent --output /dev/null $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)" != 200 ]; then exit 1; fi
+                        if [ "$(curl -X POST --head --write-out %{http_code} --silent --output /dev/null -d \
+                        "firstName=$CUSTOMER_NAME&tableNumber=1&dish=food&bill=1.23" $LOAD_BALANCER/$SERVICE_PATH/submitOrder)" != 200 ]; then exit 1; fi
+                        if [ "$(curl --head --write-out %{http_code} --silent --output /dev/null $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)" != 200 ]; then exit 1; fi
                     '''
                 }
             }
