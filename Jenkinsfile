@@ -70,7 +70,7 @@ pipeline{
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
                     kubectl get all --namespace rc
                 '''
-                stash includes: 'Restaurant-k8s-components/**', name: 'k8s-components'
+                stash includes: 'Restaurant-k8s-components/', name: 'k8s-components'
             }
         }
         stage('integration testing'){
@@ -96,7 +96,10 @@ pipeline{
         }
         stage('deploy to cluster - prod namespace'){
             steps{
-                unstash: 'k8s-components'
+                dir(.){
+                    unstash: 'k8s-components'
+                }
+
                 sh '''
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
                     yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
