@@ -24,6 +24,7 @@ pipeline{
         }
         stage('build docker images'){
             steps{
+                unstash: 'war'
                 sh '''
                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
@@ -40,7 +41,7 @@ pipeline{
     	            ls -alF
 	                kops export kubecfg --admin --name fullstack.k8s.local
 	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
-	                kubectl config set-context --current --namespace dev
+	                kubectl config set-context --current --namespace rc
 	            '''
             }
         }
@@ -60,15 +61,16 @@ pipeline{
 //                     }
 
                     sh '''
+                        yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
                         kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
                         kubectl apply -f Restaurant-k8s-components/ --recursive
                         kubectl get deployment
                         kubectl rollout restart deployment tables-deployment
-                    '''
-                    sh '''
+
                         if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
                         kubectl get all --namespace rc
                     '''
+                    stash includes: 'Restaurant-k8s-components/*' name: 'k8s-components'
                 }
             }
         }
@@ -91,6 +93,26 @@ pipeline{
 
                         BOOT_CUSTOMER_RESULT="$(curl --head --write-out %{http_code} --silent --output /dev/null -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                         if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
+                    '''
+                }
+            }
+        }
+        stage('deploy to cluster - prod namespace'){
+            steps{
+                script{
+                    unstash: 'k8s-components'
+                    sh '''
+                        find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
+                        yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
+
+                        kubectl config set-context --current --namespace prod
+                        kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
+                        kubectl apply -f Restaurant-k8s-components/ --recursive
+                        kubectl get deployment
+                        kubectl rollout restart deployment tables-deployment
+
+                        if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                        kubectl get all --namespace prod
                     '''
                 }
             }
