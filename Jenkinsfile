@@ -44,17 +44,20 @@ pipeline{
 	            '''
             }
         }
-        stage('deploy services to cluster'){
+        stage('deploy services to cluster - rc namespace'){
             steps{
                 script{
-                    sh 'git clone https://github.com/bconnelly/Restaurant-k8s-components.git'
+                    sh '''
+                        git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+                        find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
+                    '''
 
-                    def fileString = sh(script: 'find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/.git -prune -o -name *.yaml -print', returnStdout: true)
-                    echo fileString
-                    def files = fileString.split("\n")
-                    for(file in files){
-                        sh 'yq e \'.metadata.namespace = \"dev\"\' ' + file
-                    }
+//                     def fileString = sh(script: 'find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print', returnStdout: true)
+//                     echo fileString
+//                     def files = fileString.split("\n")
+//                     for(file in files){
+//                         sh 'yq -i \'.metadata.namespace = \"rc\"\' ' + file
+//                     }
 
                     sh '''
                         kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
@@ -64,6 +67,7 @@ pipeline{
                     '''
                     sh '''
                         if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                        kubectl get all --namespace rc
                     '''
                 }
             }
@@ -72,7 +76,7 @@ pipeline{
             steps{
                 script{
                     sh '''
-                        export LOAD_BALANCER="acb6d1c82bd774ba19f49b67f1d39a1c-6b63e6a07fb802ff.elb.us-east-1.amazonaws.com"
+                        export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-5002cd97a201173a.elb.us-east-1.amazonaws.com"
                         export SERVICE_PATH="RestaurantService"
                         export CUSTOMER_NAME=$RANDOM
 
@@ -91,13 +95,6 @@ pipeline{
                 }
             }
         }
-//         stage('cleanup'){
-//             steps{
-//                 script{
-//
-//                 }
-//             }
-//         }
     }
     post{
         always{
