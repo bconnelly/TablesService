@@ -24,7 +24,7 @@ pipeline{
         }
         stage('build docker images'){
             steps{
-                dir(sh 'pwd'){
+                dir($(env.WORKSPACE)){
                     unstash: 'war'
                 }
                 sh '''
@@ -98,7 +98,7 @@ pipeline{
         }
         stage('deploy to cluster - prod namespace'){
             steps{
-                dir(.){
+                dir($(env.WORKSPACE)){
                     unstash: 'k8s-components'
                 }
 
