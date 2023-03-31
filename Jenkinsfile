@@ -23,13 +23,13 @@ pipeline{
             }
         }
         stage('build docker images'){
-            unstash: 'war'
             steps{
                 sh '''
                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
+                    ls -alF
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
                 '''
