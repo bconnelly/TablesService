@@ -99,9 +99,10 @@ pipeline{
         }
         stage('deploy to cluster - prod namespace'){
             steps{
-                dir($(env.WORKSPACE)){
-                    unstash: 'k8s-components'
-                }
+                unstash 'k8s-components'
+//                 dir($(env.WORKSPACE)){
+//                     unstash: 'k8s-components'
+//                 }
 
                 sh '''
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
