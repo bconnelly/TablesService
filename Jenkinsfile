@@ -70,7 +70,7 @@ pipeline{
                         if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
                         kubectl get all --namespace rc
                     '''
-                    stash includes: 'Restaurant-k8s-components/*' name: 'k8s-components'
+                    stash includes: 'Restaurant-k8s-components/**', name: 'k8s-components'
                 }
             }
         }
