@@ -91,19 +91,20 @@ pipeline{
                 }
             }
         }
-        stage('cleanup'){
-            steps{
-                script{
-
-                }
-            }
-        }
+//         stage('cleanup'){
+//             steps{
+//                 script{
+//
+//                 }
+//             }
+//         }
     }
     post{
         always{
-
-            sh 'docker rmi bryan949/fullstack-tables'
-            sh 'docker image prune'
+            script{
+                sh 'docker rmi bryan949/fullstack-tables'
+                sh 'docker image prune'
+            }
 
             cleanWs(cleanWhenAborted: true,
                     cleanWhenFailure: true,
