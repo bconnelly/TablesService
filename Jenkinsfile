@@ -79,7 +79,7 @@ pipeline{
                         SEAT_CUSTOMER_RESULT="$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)"
                         if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
 
-                        GET_OPEN_TABLES_RESULT="$(curl --head --write-out %{http_code} --silent --output /dev/null $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
+                        GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code}  $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
                         if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
 
                         SUBMIT_ORDER_RESULT="$(curl -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME&tableNumber=1&dish=food&bill=1.23" $LOAD_BALANCER/$SERVICE_PATH/submitOrder)"
