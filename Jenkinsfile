@@ -23,8 +23,8 @@ pipeline{
             }
         }
         stage('build docker images'){
+            unstash: 'war'
             steps{
-                unstash: 'war'
                 sh '''
                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
