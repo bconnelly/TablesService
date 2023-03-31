@@ -76,8 +76,8 @@ pipeline{
                         export SERVICE_PATH="RestaurantService"
                         export CUSTOMER_NAME=$RANDOM
 
-                        echo $(curl -X POST -s -o /dev/null -w '%{http_code}' -d 'firstName=8uhioj0d3&address=someaddress&cash=1.23' $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                        SEAT_CUSTOMER_RESULT="$(curl -X POST -s -o /dev/null -w '%{http_code}' -d 'firstName=8uhioj0d3&address=someaddress&cash=1.23' $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)"
+                        echo $(curl -X POST -s -o /dev/null -w '%{http_code}' -d 'firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23' $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
+                        SEAT_CUSTOMER_RESULT="$(curl -X POST -s -o /dev/null -w '%{http_code}' -d 'firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23' $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)"
                         if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
 
                         GET_OPEN_TABLES_RESULT="$(curl --head --write-out %{http_code} --silent --output /dev/null $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
