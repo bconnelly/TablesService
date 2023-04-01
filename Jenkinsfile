@@ -33,7 +33,6 @@ pipeline{
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
-                    ls -alF
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
                 '''
@@ -79,12 +78,12 @@ pipeline{
         stage('integration testing'){
             steps{
                 sh '''
-                    export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-5002cd97a201173a.elb.us-east-1.amazonaws.com"
+                    export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
                     export SERVICE_PATH="RestaurantService"
                     export CUSTOMER_NAME=$RANDOM
 
                     SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                    if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT"; fi
+                    if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
 
                     GET_OPEN_TABLES_RESULT="$(curl --head --write-out %{http_code} --silent --output /dev/null $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
                     if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
