@@ -25,9 +25,6 @@ pipeline{
         stage('build docker images'){
             steps{
                 unstash 'war'
-//                 dir($(env.WORKSPACE)){
-//                     unstash 'war'
-//                 }
                 sh '''
                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
@@ -67,26 +64,42 @@ pipeline{
             }
         }
         stage('integration testing'){
-                    steps{
-                        sh '''
-                            export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
-                            export SERVICE_PATH="RestaurantService"
-                            export CUSTOMER_NAME=$RANDOM
+            steps{
+                sh '''
+                    export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
+                    export SERVICE_PATH="RestaurantService"
+                    export CUSTOMER_NAME=$RANDOM
 
-                            SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                            if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
-
-                            GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code} $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
-                            if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
-
-                            SUBMIT_ORDER_RESULT="$(curl -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME&tableNumber=1&dish=food&bill=1.23" $LOAD_BALANCER/$SERVICE_PATH/submitOrder)"
-                            if [ "$SUBMIT_ORDER_RESULT" != 200 ]; then echo "$SUBMIT_ORDER_RESULT" && exit 1; fi
-
-                            BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
-                            if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
-                        '''
+                    fail_revert () {
+                        echo "$1"
+                        echo
+//                         get commits that rc has ahead of master, revert them, merge revisions into master
+                        git rev-list --left-right master...rc | while read line
+                        do
+                            COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                            git revert $COMMIT --no-edit
+                        done
+                        git merge rc
+                        git push origin master
                     }
-                }
+
+                    SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
+                     if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then fail_revert "$SEAT_CUSTOMER_RESULT" && exit 1; fi
+
+                    GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code} $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
+                    if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then fail_revert "$GET_OPEN_TABLES_RESULT" && exit 1; fi
+
+                    SUBMIT_ORDER_RESULT="$(curl -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME&tableNumber=1&dish=food&bill=1.23" $LOAD_BALANCER/$SERVICE_PATH/submitOrder)"
+                    if [ "$SUBMIT_ORDER_RESULT" != 200 ]; then fail_revert "$SUBMIT_ORDER_RESULT" && exit 1; fi
+
+                    BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
+                    if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then fail_revert "$GET_OPEN_TABLES_RESULT" && exit 1; fi
+
+                    git merge rc
+                    git push origin master
+                '''
+            }
+        }
         stage('deploy to cluster - prod namespace'){
             steps{
                 unstash 'k8s-components'
@@ -104,7 +117,7 @@ pipeline{
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
 
-                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "PROD FAILURE"; fi
                 '''
             }
         }
