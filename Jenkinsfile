@@ -25,6 +25,9 @@ pipeline{
         stage('build docker images'){
             steps{
                 unstash 'war'
+//                 dir($(env.WORKSPACE)){
+//                     unstash 'war'
+//                 }
                 sh '''
                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
@@ -71,10 +74,7 @@ pipeline{
                             export CUSTOMER_NAME=$RANDOM
 
                             SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                            if [ "$SEAT_CUSTOMER_RESULT" != 200 ]
-                            then
-                                git rev-list --left-to-right master...rc
-                            fi
+                            if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
 
                             GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code} $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
                             if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
@@ -84,15 +84,15 @@ pipeline{
 
                             BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                             if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
-
-//                             if [ "$SEAT_CUSTOMER_RESULT" != 200 ] || [ "$GET_OPEN_TABLES_RESULT" != 200 ] || [ "$SUBMIT_ORDER_RESULT" != 200 ] || [ "$BOOT_CUSTOMER_RESULT" != 200 ]
-
                         '''
                     }
                 }
         stage('deploy to cluster - prod namespace'){
             steps{
                 unstash 'k8s-components'
+//                 dir($(env.WORKSPACE)){
+//                     unstash: 'k8s-components'
+//                 }
 
                 sh '''
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
