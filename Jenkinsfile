@@ -74,8 +74,11 @@ pipeline{
                             export CUSTOMER_NAME=$RANDOM
 
                             SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                            if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
-
+                             if [ "$SEAT_CUSTOMER_RESULT" != 200 ]
+                                then
+                                    git checkout rc
+                                    git rev-list --left-right master...rc | while read line; do echo $line; done
+                                fi
                             GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code} $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
                             if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
 
