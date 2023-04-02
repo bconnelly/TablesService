@@ -70,6 +70,9 @@ pipeline{
                     export SERVICE_PATH="RestaurantService"
                     export CUSTOMER_NAME=$RANDOM
 
+                    git checkout rc
+                    git checkout master
+
                     fail_revert () {
                         echo "$1"
                         echo
