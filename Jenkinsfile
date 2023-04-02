@@ -5,15 +5,15 @@ pipeline{
             args '-v /root/.m2:/root/.m2 \
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
-                  --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + \
-                  ' --env DOCKER_USER=' + env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS
+                  --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + ' --env DOCKER_USER=' + \
+                  env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS + ' --env GH_TOKEN=' + env.GITHUB_TOKEN
             alwaysPull true
         }
     }
     stages{
         stage('maven build and test, docker build and push'){
             steps{
-                echo 'Packaging and testing:'
+                echo 'packaging and testing:'
                 sh '''
                     mvn verify
                     ls -alF
