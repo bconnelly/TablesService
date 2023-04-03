@@ -6,7 +6,7 @@ pipeline{
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + ' --env DOCKER_USER=' + \
-                  env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS + ' --env GH_TOKEN=' + env.GITHUB_TOKEN
+                  env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS
             alwaysPull true
         }
     }
@@ -87,6 +87,9 @@ pipeline{
                 '''
                 unstash 'tables-repo'
                 sh '''
+                    ls -alF
+                    git checkout rc
+                    git checkout master
                     git merge rc
                     git push origin master
                 '''
@@ -95,7 +98,6 @@ pipeline{
         stage('deploy to cluster - prod namespace'){
             steps{
                 unstash 'k8s-components'
-
                 sh '''
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
                     yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
@@ -115,6 +117,7 @@ pipeline{
         failure{
             unstash 'tables-repo'
             sh '''
+                ls -alF
                 git checkout rc
                 git checkout master
                 git rev-list --left-right master...rc | while read line
@@ -127,12 +130,10 @@ pipeline{
             '''
         }
         always{
-            script{
-                sh '''
-                    docker rmi bryan949/fullstack-tables
-                    docker image prune
-                '''
-            }
+            sh '''
+                docker rmi bryan949/fullstack-tables
+                docker image prune
+            '''
 
             cleanWs(cleanWhenAborted: true,
                     cleanWhenFailure: true,
@@ -141,8 +142,7 @@ pipeline{
                     cleanWhenUnstable: true,
                     cleanupMatrixParent: true,
                     deleteDirs: true,
-                    disableDeferredWipeout: true
-            )
+                    disableDeferredWipeout: true)
         }
     }
 }
