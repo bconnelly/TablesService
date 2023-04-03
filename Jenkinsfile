@@ -15,6 +15,7 @@ pipeline{
             steps{
                 echo 'packaging and testing:'
                 sh '''
+                    echo $GH_TOKEN
                     mvn verify
                     ls -alF
                 '''
@@ -88,7 +89,6 @@ pipeline{
                 sh '''
                     git merge rc
                     git push origin master
-
                 '''
             }
         }
