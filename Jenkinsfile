@@ -121,15 +121,19 @@ pipeline{
     }
     post{
         failure{
-            sh '''
-                git rev-list --left-right master...rc | while read line
-                do
-                    COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
-                    git revert $COMMIT --no-edit
-                done
-                git merge rc
-                git push origin master
-            '''
+            script{
+                sh '''
+                    git checkout rc
+                    git checkout master
+                    git rev-list --left-right master...rc | while read line
+                    do
+                        COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                        git revert $COMMIT --no-edit
+                    done
+                    git merge rc
+                    git push origin master
+                '''
+            }
         }
         always{
             script{
