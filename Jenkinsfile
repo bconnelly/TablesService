@@ -77,6 +77,7 @@ pipeline{
                 unstash 'tables-repo'
                 sh '''
                     gh auth login --with-token < /root/jenkins/restaurant-resources/github-pass
+                    git config --global user.name "bconnelly"
                     ls -alF
                     git checkout rc
                     git checkout master
