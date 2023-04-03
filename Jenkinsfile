@@ -15,7 +15,6 @@ pipeline{
             steps{
                 echo 'packaging and testing:'
                 sh '''
-                    echo $GH_TOKEN
                     mvn verify
                     ls -alF
                 '''
@@ -28,7 +27,8 @@ pipeline{
             steps{
                 unstash 'tables-repo'
                 sh '''
-                    docker login --username=$DOCKER_USER --password=$DOCKER_PASS
+                    ls -alF
+                    cat /root/jenkins/restaurant-resources/dockerhub-pass | docker login --username=$DOCKER_USER --password-stdin
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
@@ -87,6 +87,7 @@ pipeline{
                 '''
                 unstash 'tables-repo'
                 sh '''
+                    gh auth login --with-token < /root/jenkins/workspace/restaurant-resources/github-pass
                     ls -alF
                     git checkout rc
                     git checkout master
