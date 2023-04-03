@@ -70,21 +70,6 @@ pipeline{
                     export SERVICE_PATH="RestaurantService"
                     export CUSTOMER_NAME=$RANDOM
 
-//                     git checkout rc
-//                     git checkout master
-//
-//                     fail_revert () {
-//                         echo "$1"
-// //                         get commits that rc has ahead of master, revert them, merge revisions into master
-//                         git rev-list --left-right master...rc | while read line
-//                         do
-//                             COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
-//                             git revert $COMMIT --no-edit
-//                         done
-//                         git merge rc
-//                         git push origin master
-//                     }
-
                     SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
                      if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
 
@@ -126,7 +111,6 @@ pipeline{
         failure{
             script{
                 sh '''
-//                 roll back changes in rc ahead of master
                     git checkout rc
                     git checkout master
                     git rev-list --left-right master...rc | while read line
