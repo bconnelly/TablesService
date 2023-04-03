@@ -33,8 +33,14 @@ pipeline{
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
                     cp target/TablesService.war .
+
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
+
+                    rm tomcat-users.xml
+                    rm context.xml
+                    rm server.xml
+                    rm TablesService.war
                 '''
             }
         }
@@ -68,6 +74,16 @@ pipeline{
         }
         stage('integration testing'){
             steps{
+                unstash 'tables-repo'
+                sh '''
+                    gh auth login --with-token < /root/jenkins/restaurant-resources/github-pass
+                    ls -alF
+                    git checkout rc
+                    git checkout master
+                    git merge rc
+                    git push origin master
+                '''
+
                 sh '''
                     export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
                     export SERVICE_PATH="RestaurantService"
@@ -85,15 +101,7 @@ pipeline{
                     BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                     if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
                 '''
-                unstash 'tables-repo'
-                sh '''
-                    gh auth login --with-token < /root/jenkins/restaurant-resources/github-pass
-                    ls -alF
-                    git checkout rc
-                    git checkout master
-                    git merge rc
-                    git push origin master
-                '''
+
             }
         }
         stage('deploy to cluster - prod namespace'){
