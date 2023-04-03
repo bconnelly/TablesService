@@ -19,6 +19,7 @@ pipeline{
                     ls -alF
                 '''
                 stash includes: 'target/TablesService.war', name: 'war'
+                stash includes: '${env.WORKSPACE}', name: 'tables-repo'
 
             }
         }
@@ -81,7 +82,9 @@ pipeline{
 
                     BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                     if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
-
+                '''
+                unstash 'tables-repo'
+                sh '''
                     git merge rc
                     git push origin master
 
@@ -109,19 +112,18 @@ pipeline{
     }
     post{
         failure{
-            script{
-                sh '''
-                    git checkout rc
-                    git checkout master
-                    git rev-list --left-right master...rc | while read line
-                    do
-                        COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
-                        git revert $COMMIT --no-edit
-                    done
-                    git merge rc
-                    git push origin master
-                '''
-            }
+            unstash 'tables-repo'
+            sh '''
+                git checkout rc
+                git checkout master
+                git rev-list --left-right master...rc | while read line
+                do
+                    COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                    git revert $COMMIT --no-edit
+                done
+                git merge rc
+                git push origin master
+            '''
         }
         always{
             script{
