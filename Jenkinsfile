@@ -73,42 +73,36 @@ pipeline{
                     git checkout rc
                     git checkout master
 
-                    fail_revert () {
-                        echo "$1"
-                        echo
-//                         get commits that rc has ahead of master, revert them, merge revisions into master
-                        git rev-list --left-right master...rc | while read line
-                        do
-                            COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
-                            git revert $COMMIT --no-edit
-                        done
-                        git merge rc
-                        git push origin master
-                    }
+//                     fail_revert () {
+//                         echo "$1"
+// //                         get commits that rc has ahead of master, revert them, merge revisions into master
+//                         git rev-list --left-right master...rc | while read line
+//                         do
+//                             COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+//                             git revert $COMMIT --no-edit
+//                         done
+//                         git merge rc
+//                         git push origin master
+//                     }
 
                     SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                     if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then fail_revert "$SEAT_CUSTOMER_RESULT" && exit 1; fi
+                     if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
 
                     GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code} $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
-                    if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then fail_revert "$GET_OPEN_TABLES_RESULT" && exit 1; fi
+                    if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
 
                     SUBMIT_ORDER_RESULT="$(curl -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME&tableNumber=1&dish=food&bill=1.23" $LOAD_BALANCER/$SERVICE_PATH/submitOrder)"
-                    if [ "$SUBMIT_ORDER_RESULT" != 200 ]; then fail_revert "$SUBMIT_ORDER_RESULT" && exit 1; fi
+                    if [ "$SUBMIT_ORDER_RESULT" != 200 ]; then echo "$SUBMIT_ORDER_RESULT" && exit 1; fi
 
                     BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
-                    if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then fail_revert "$GET_OPEN_TABLES_RESULT" && exit 1; fi
+                    if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
 
-                    git merge rc
-                    git push origin master
                 '''
             }
         }
         stage('deploy to cluster - prod namespace'){
             steps{
                 unstash 'k8s-components'
-//                 dir($(env.WORKSPACE)){
-//                     unstash: 'k8s-components'
-//                 }
 
                 sh '''
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
@@ -126,10 +120,23 @@ pipeline{
         }
     }
     post{
+        failure{
+            sh '''
+                git rev-list --left-right master...rc | while read line
+                do
+                    COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                    git revert $COMMIT --no-edit
+                done
+                git merge rc
+                git push origin master
+            '''
+        }
         always{
             script{
-                sh 'docker rmi bryan949/fullstack-tables'
-                sh 'docker image prune'
+                sh '''
+                    docker rmi bryan949/fullstack-tables
+                    docker image prune
+                '''
             }
 
             cleanWs(cleanWhenAborted: true,
