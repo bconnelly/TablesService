@@ -19,7 +19,7 @@ pipeline{
                     ls -alF
                 '''
 //                 stash includes: 'target/TablesService.war', name: 'war'
-                stash includes: '${env.WORKSPACE}', name: 'tables-repo'
+                stash name: 'tables-repo'
 
             }
         }
