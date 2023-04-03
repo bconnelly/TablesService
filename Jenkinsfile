@@ -18,19 +18,20 @@ pipeline{
                     mvn verify
                     ls -alF
                 '''
-                stash includes: 'target/TablesService.war', name: 'war'
+//                 stash includes: 'target/TablesService.war', name: 'war'
                 stash includes: '${env.WORKSPACE}', name: 'tables-repo'
 
             }
         }
         stage('build docker images'){
             steps{
-                unstash 'war'
+                unstash 'tables-repo'
                 sh '''
                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
+                    cp target/TablesService.war .
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
                 '''
