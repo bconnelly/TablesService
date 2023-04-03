@@ -26,7 +26,7 @@ pipeline{
             steps{
                 unstash 'war'
                 sh '''
-//                     docker login --username=$DOCKER_USER --password=$DOCKER_PASS
+                    docker login --username=$DOCKER_USER --password=$DOCKER_PASS
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
@@ -70,9 +70,9 @@ pipeline{
                     export SERVICE_PATH="RestaurantService"
                     export CUSTOMER_NAME=$RANDOM
 
-                    git checkout rc
-                    git checkout master
-
+//                     git checkout rc
+//                     git checkout master
+//
 //                     fail_revert () {
 //                         echo "$1"
 // //                         get commits that rc has ahead of master, revert them, merge revisions into master
@@ -96,6 +96,9 @@ pipeline{
 
                     BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                     if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
+
+                    git merge rc
+                    git push origin master
 
                 '''
             }
@@ -123,6 +126,7 @@ pipeline{
         failure{
             script{
                 sh '''
+//                 roll back changes in rc ahead of master
                     git checkout rc
                     git checkout master
                     git rev-list --left-right master...rc | while read line
