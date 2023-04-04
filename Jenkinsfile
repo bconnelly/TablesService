@@ -73,6 +73,8 @@ pipeline{
             }
         }
         stage('integration testing'){
+            steps{
+                unstash 'tables-repo'
                 sh '''
                     export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
                     export SERVICE_PATH="RestaurantService"
@@ -90,8 +92,7 @@ pipeline{
                     BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                     if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
                 '''
-            steps{
-                unstash 'tables-repo'
+
                 withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
                     sh '''
                         ls -alF
