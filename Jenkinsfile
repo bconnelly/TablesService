@@ -73,20 +73,6 @@ pipeline{
             }
         }
         stage('integration testing'){
-//         gh auth login --with-token < /root/jenkins/restaurant-resources/github-pass
-            steps{
-                unstash 'tables-repo'
-                withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
-                    sh '''
-                        git config --global user.name "bconnelly"
-                        ls -alF
-                        git checkout rc
-                        git checkout master
-                        git merge rc
-                        git push origin master
-                    '''
-                }
-
                 sh '''
                     export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
                     export SERVICE_PATH="RestaurantService"
@@ -104,7 +90,17 @@ pipeline{
                     BOOT_CUSTOMER_RESULT="$(curl --limit-rate 1G -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
                     if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
                 '''
-
+            steps{
+                unstash 'tables-repo'
+                withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
+                    sh '''
+                        ls -alF
+                        git checkout rc
+                        git checkout master
+                        git merge rc
+                        git push origin master
+                    '''
+                }
             }
         }
         stage('deploy to cluster - prod namespace'){
@@ -128,18 +124,20 @@ pipeline{
     post{
         failure{
             unstash 'tables-repo'
-            sh '''
-                ls -alF
-                git checkout rc
-                git checkout master
-                git rev-list --left-right master...rc | while read line
-                do
-                    COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
-                    git revert $COMMIT --no-edit
-                done
-                git merge rc
-                git push origin master
-            '''
+            withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
+                sh '''
+                    ls -alF
+                    git checkout rc
+                    git checkout master
+                    git rev-list --left-right master...rc | while read line
+                    do
+                        COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                        git revert $COMMIT --no-edit
+                    done
+                    git merge rc
+                    git push origin master
+                '''
+            }
         }
         always{
             sh '''
