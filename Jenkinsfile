@@ -73,17 +73,19 @@ pipeline{
             }
         }
         stage('integration testing'){
+//         gh auth login --with-token < /root/jenkins/restaurant-resources/github-pass
             steps{
                 unstash 'tables-repo'
-                sh '''
-                    gh auth login --with-token < /root/jenkins/restaurant-resources/github-pass
-                    git config --global user.name "bconnelly"
-                    ls -alF
-                    git checkout rc
-                    git checkout master
-                    git merge rc
-                    git push origin master
-                '''
+                withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
+                    sh '''
+                        git config --global user.name "bconnelly"
+                        ls -alF
+                        git checkout rc
+                        git checkout master
+                        git merge rc
+                        git push origin master
+                    '''
+                }
 
                 sh '''
                     export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
