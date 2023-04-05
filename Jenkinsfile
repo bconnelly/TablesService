@@ -64,11 +64,10 @@ pipeline{
                     kubectl apply -f Restaurant-k8s-components/tables/
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
-                    sleep 2
 
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "failed to deploy to rc namespace" && exit 1; fi
                 '''
-                stash includes: 'Restaurant-k8s-components/tables', name: 'k8s-components'
+                stash includes: 'Restaurant-k8s-components', name: 'k8s-components'
             }
         }
         stage('integration testing'){
@@ -117,7 +116,6 @@ pipeline{
                     kubectl apply -f Restaurant-k8s-components/tables/
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
-                    sleep 2
 
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "PROD FAILURE"; fi
                 '''
