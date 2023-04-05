@@ -55,8 +55,10 @@ pipeline{
                 sh '''
                     git clone https://github.com/bconnelly/Restaurant-k8s-components.git
 
-                    find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
+                    find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
                     yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/fullstack-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/mysql-external-service.yaml > /dev/null
 
                     kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
