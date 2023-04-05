@@ -74,7 +74,7 @@ pipeline{
             steps{
                 unstash 'tables-repo'
                 sh '''
-                    export LOAD_BALANCER="a886fa07e7d52403b85d9b8e2b9f6966-682684080.us-east-1.elb.amazonaws.com"
+                    export LOAD_BALANCER="a04b190e2ed854520b53460848db7d4c-fe8666faafe374b5.elb.us-east-1.amazonaws.com"
                     export SERVICE_PATH="RestaurantService"
                     export CUSTOMER_NAME=$RANDOM
 
