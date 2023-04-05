@@ -7,7 +7,7 @@ RUN wget https://downloads.apache.org/tomcat/tomcat-10/v10.1.7/bin/apache-tomcat
     rm apache-tomcat-10.1.7.tar.gz && \
     chown -R tomcat: /opt/tomcat
 
-COPY target/TablesService.war /opt/tomcat/apache-tomcat-10.1.7/webapps
+COPY TablesService.war /opt/tomcat/apache-tomcat-10.1.7/webapps
 COPY tomcat-users.xml /opt/tomcat/apache-tomcat-10.1.7/conf
 COPY context.xml /opt/tomcat/apache-tomcat-10.1.7/webapps/manager/META-INF
 COPY server.xml /opt/tomcat/apache-tomcat-10.1.7/conf
