@@ -57,8 +57,8 @@ pipeline{
 
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
                     yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
-                    yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/fullstack-config.yaml > /dev/null
-                    yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/mysql-external-service.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/fullstack-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
 
                     kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
@@ -108,8 +108,8 @@ pipeline{
                 sh '''
                     find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
                     yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
-                    yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-config.yaml > /dev/null
-                    yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/mysql-external-service.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/fullstack-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
 
                     kubectl config set-context --current --namespace prod
                     kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
