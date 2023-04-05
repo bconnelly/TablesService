@@ -5,8 +5,8 @@ pipeline{
             args '-v /root/.m2:/root/.m2 \
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
-                  --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + ' --env DOCKER_USER=' + \
-                  env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS
+                  --privileged --env KOPS_STATE_STORE=' + env.KOPS_STATE_STORE + \
+                  ' --env DOCKER_USER=' + env.DOCKER_USER + ' --env DOCKER_PASS=' + env.DOCKER_PASS
             alwaysPull true
         }
     }
@@ -16,9 +16,7 @@ pipeline{
                 echo 'packaging and testing:'
                 sh '''
                     mvn verify
-                    ls -alF
                 '''
-//                 stash includes: 'target/TablesService.war', name: 'war'
                 stash name: 'tables-repo'
 
             }
@@ -27,7 +25,6 @@ pipeline{
             steps{
                 unstash 'tables-repo'
                 sh '''
-                    ls -alF
                     cat /root/jenkins/restaurant-resources/dockerhub-pass | docker login --username=$DOCKER_USER --password-stdin
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
@@ -47,7 +44,6 @@ pipeline{
         stage('configure cluster connection'){
             steps{
     	        sh '''
-    	            ls -alF
 	                kops export kubecfg --admin --name fullstack.k8s.local
 	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
 	                kubectl config set-context --current --namespace rc
@@ -67,9 +63,9 @@ pipeline{
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
 
-                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "failed to deploy to rc namespace" && exit 1; fi
                 '''
-                stash includes: 'Restaurant-k8s-components/', name: 'k8s-components'
+                stash includes: 'Restaurant-k8s-components/tables', name: 'k8s-components'
             }
         }
         stage('integration testing'){
@@ -95,7 +91,6 @@ pipeline{
 
                 withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
                     sh '''
-                        ls -alF
                         git checkout rc
                         git checkout master
                         git merge rc
@@ -107,9 +102,12 @@ pipeline{
         stage('deploy to cluster - prod namespace'){
             steps{
                 unstash 'k8s-components'
+
                 sh '''
-                    find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
+                    find Restaurant-k8s-components -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
                     yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/fullstack-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/mysql-external-service.yaml > /dev/null
 
                     kubectl config set-context --current --namespace prod
                     kubectl apply -f /root/jenkins/restaurant-resources/fullstack-secrets.yaml
@@ -127,7 +125,6 @@ pipeline{
             unstash 'tables-repo'
             withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
                 sh '''
-                    ls -alF
                     git checkout rc
                     git checkout master
                     git rev-list --left-right master...rc | while read line
