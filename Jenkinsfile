@@ -29,7 +29,6 @@ pipeline{
                     cp /root/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /root/jenkins/restaurant-resources/context.xml .
                     cp /root/jenkins/restaurant-resources/server.xml .
-                    cp target/TablesService.war .
 
                     docker build -t bryan949/fullstack-tables .
                     docker push bryan949/fullstack-tables:latest
