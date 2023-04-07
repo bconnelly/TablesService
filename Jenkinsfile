@@ -36,7 +36,6 @@ pipeline{
                     rm tomcat-users.xml
                     rm context.xml
                     rm server.xml
-                    rm TablesService.war
                 '''
             }
         }
@@ -69,7 +68,7 @@ pipeline{
                 stash includes: 'Restaurant-k8s-components/', name: 'k8s-components'
             }
         }
-        stage('integration testing'){
+        stage('end-to-end tests'){
             steps{
                 unstash 'tables-repo'
                 sh '''
