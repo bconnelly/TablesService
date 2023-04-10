@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/fullstack-agent:0.1'
+            image 'bryan949/fullstack-agent:0.3'
             args '-v /root/.m2:/root/.m2 \
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
@@ -68,26 +68,17 @@ pipeline{
                 stash includes: 'Restaurant-k8s-components/', name: 'k8s-components'
             }
         }
-        stage('end-to-end tests'){
+        stage('sanity tests'){
             steps{
                 unstash 'tables-repo'
                 sh '''
-                    export LOAD_BALANCER="a04b190e2ed854520b53460848db7d4c-fe8666faafe374b5.elb.us-east-1.amazonaws.com"
-                    export SERVICE_PATH="RestaurantService"
-                    export CUSTOMER_NAME=$RANDOM
-
-                    SEAT_CUSTOMER_RESULT=$(curl -X POST -s -o /dev/null -w '%{http_code}' -d "firstName=$CUSTOMER_NAME&address=someaddress&cash=1.23" $LOAD_BALANCER/$SERVICE_PATH/seatCustomer)
-                     if [ "$SEAT_CUSTOMER_RESULT" != 200 ]; then echo "$SEAT_CUSTOMER_RESULT" && exit 1; fi
-
-                    GET_OPEN_TABLES_RESULT="$(curl -s -o /dev/null -w %{http_code} $LOAD_BALANCER/$SERVICE_PATH/getOpenTables)"
-                    if [ "$GET_OPEN_TABLES_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
-
-                    SUBMIT_ORDER_RESULT="$(curl -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME&tableNumber=1&dish=food&bill=1.23" $LOAD_BALANCER/$SERVICE_PATH/submitOrder)"
-                    if [ "$SUBMIT_ORDER_RESULT" != 200 ]; then echo "$SUBMIT_ORDER_RESULT" && exit 1; fi
-
-                    BOOT_CUSTOMER_RESULT="$(curl -X POST -s -o /dev/null -w %{http_code} -d "firstName=$CUSTOMER_NAME" $LOAD_BALANCER/$SERVICE_PATH/bootCustomer)"
-                    if [ "$BOOT_CUSTOMER_RESULT" != 200 ]; then echo "$GET_OPEN_TABLES_RESULT" && exit 1; fi
-                '''
+                    python tests.py
+                    exit_status=$?
+                    if [ "${exit_status}" -ne 0 ];
+                    then
+                        echo "exit ${exit_status}"
+                    fi
+                    '''
 
                 withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
                     sh '''

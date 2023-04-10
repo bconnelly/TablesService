@@ -10,6 +10,8 @@ import java.util.List;
 @SpringBootTest
 class TableLogicTest {
 
+//    testing against in-mem db defined by data.sql and schema.sql
+
     @Autowired
     TableLogic tableLogic;
 
@@ -21,5 +23,15 @@ class TableLogicTest {
         assert tables.get(2).getCapacity().equals(4);
         assert tables.get(3).getCapacity().equals(4);
         assert tables.get(4).getCapacity().equals(6);
+    }
+
+    @Test
+    void tableExists(){
+        assert(tableLogic.tableExists(1));
+        assert(tableLogic.tableExists(2));
+        assert(tableLogic.tableExists(3));
+        assert(tableLogic.tableExists(4));
+        assert(tableLogic.tableExists(5));
+        assert(!tableLogic.tableExists(6));
     }
 }
