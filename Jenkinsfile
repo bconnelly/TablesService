@@ -72,7 +72,7 @@ pipeline{
             steps{
                 unstash 'tables-repo'
                 sh '''
-                    python tests.py
+                    python Restaurant-k8s-components/tests.py
                     exit_status=$?
                     if [ "${exit_status}" -ne 0 ];
                     then
