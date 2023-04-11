@@ -16,7 +16,6 @@ public class TableLogic {
     TableRepository tableRepository;
 
     public List<Table> getAllTables (){
-        log.debug("at tableLogic.findAll");
         return tableRepository.findAll();
     }
 

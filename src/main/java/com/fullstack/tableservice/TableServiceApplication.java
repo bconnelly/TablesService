@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,22 +25,14 @@ public class TableServiceApplication extends SpringBootServletInitializer {
     private TableLogic tableLogic;
 
     @GetMapping(path = "/getAllTables")
-    public ResponseEntity<List<Table>> getAllTables(){
+    public List<Table> getAllTables(){
         log.debug("getAllTables requested");
-        try {
-            return ResponseEntity.status(HttpStatus.OK).body(tableLogic.getAllTables());
-        } catch(RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        return tableLogic.getAllTables();
     }
 
     @GetMapping(path = "/tableExists")
-    public ResponseEntity<Boolean> tableExists(Integer tableNumber){
-        try{
-            return ResponseEntity.status(HttpStatus.OK).body(tableLogic.tableExists(tableNumber));
-        } catch(RuntimeException e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+    public Boolean tableExists(Integer tableNumber){
+        log.debug("tableExists requested");
+        return tableLogic.tableExists(tableNumber);
     }
-
 }
