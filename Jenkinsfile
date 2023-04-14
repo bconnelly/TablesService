@@ -110,6 +110,19 @@ pipeline{
                 '''
             }
         }
+        stage('sanity tests - prod'){
+            steps{
+                unstash 'tables-repo'
+                sh '''
+                    python Restaurant-k8s-components/tests.py
+                    exit_status=$?
+                    if [ "${exit_status}" -ne 0 ];
+                    then
+                        echo "PROD FAILURE, MANUAL INSPECTION NECESSARY - exit ${exit_status}"
+                    fi
+                    '''
+            }
+        }
     }
     post{
         failure{
