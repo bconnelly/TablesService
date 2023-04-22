@@ -67,6 +67,7 @@ pipeline{
                     kubectl rollout restart deployment tables-deployment
 
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "failed to deploy to rc namespace" && exit 1; fi
+                    sleep 3
                 '''
                 stash includes: 'Restaurant-k8s-components/', name: 'k8s-components'
                 stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/tests.sh', name: 'tests'
@@ -111,6 +112,7 @@ pipeline{
                     kubectl rollout restart deployment tables-deployment
 
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "PROD FAILURE"; fi
+                    sleep 3
                 '''
             }
         }
@@ -146,11 +148,6 @@ pipeline{
             }
         }
         always{
-            sh '''
-                docker rmi bryan949/fullstack-tables
-                docker image prune
-            '''
-
             cleanWs(cleanWhenAborted: true,
                     cleanWhenFailure: true,
                     cleanWhenNotBuilt: true,
@@ -159,6 +156,10 @@ pipeline{
                     cleanupMatrixParent: true,
                     deleteDirs: true,
                     disableDeferredWipeout: true)
+            sh '''
+                docker rmi bryan949/fullstack-tables
+                docker image prune
+            '''
         }
     }
 }
