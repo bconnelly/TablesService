@@ -157,7 +157,7 @@ pipeline{
                     deleteDirs: true,
                     disableDeferredWipeout: true)
             sh '''
-                docker rmi bryan949/fullstack-tables
+                docker rmi bryan949/poc-tables
                 docker image prune
             '''
         }
