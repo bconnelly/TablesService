@@ -1,7 +1,7 @@
 FROM eclipse-temurin:17.0.6_10-jdk
 SHELL ["/bin/bash", "-c"]
 
-ENV TOMCAT_VERSION=10.1.7
+ENV TOMCAT_VERSION=10.1.8
 
 RUN useradd -m -U -d /opt/tomcat -s /bin/false tomcat
 RUN wget https://downloads.apache.org/tomcat/tomcat-10/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz && \
