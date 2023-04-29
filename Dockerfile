@@ -4,7 +4,7 @@ SHELL ["/bin/bash", "-c"]
 ENV TOMCAT_VERSION=10.1.8
 
 RUN useradd -m -U -d /opt/tomcat -s /bin/false tomcat
-RUN wget https://downloads.apache.org/tomcat/tomcat-10/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz && \
+RUN wget https://archive.apache.org/dist/tomcat/tomcat-10/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz && \
     tar -xf apache-tomcat-$TOMCAT_VERSION.tar.gz -C /opt/tomcat && \
     rm apache-tomcat-$TOMCAT_VERSION.tar.gz && \
     chown -R tomcat: /opt/tomcat
