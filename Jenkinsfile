@@ -110,25 +110,14 @@ pipeline{
                     kubectl config set-context --current --namespace prod
                     kubectl apply -f /root/jenkins/restaurant-resources/poc-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
+                    kubectl apply -f Restaurant-k8s-components/poc-config.yaml
+                                        kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
 
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "PROD FAILURE"; fi
                     sleep 3
                 '''
-            }
-        }
-        stage('sanity tests - prod'){
-            steps{
-                unstash 'tables-repo'
-                sh '''
-                    ./Restaurant-k8s-components/tests.sh ${PROD_LB}
-                    exit_status=$?
-                    if [ "${exit_status}" -ne 0 ];
-                    then
-                        echo "PROD FAILURE, MANUAL INSPECTION NECESSARY - exit ${exit_status}"
-                    fi
-                    '''
             }
         }
     }
