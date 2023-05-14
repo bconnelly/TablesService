@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/fullstack-agent:0.1'
+            image 'bryan949/poc-agent:0.1'
             args '-v /root/.m2:/root/.m2 \
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
@@ -111,7 +111,7 @@ pipeline{
                     kubectl apply -f /root/jenkins/restaurant-resources/poc-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
                     kubectl apply -f Restaurant-k8s-components/poc-config.yaml
-                                        kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
+                    kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
 
