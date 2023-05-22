@@ -72,14 +72,14 @@ pipeline{
                     sleep 3
                 '''
                 stash includes: 'Restaurant-k8s-components/tables/', name: 'k8s-components'
-                stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/tests.sh', name: 'tests'
+                stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/tests.py', name: 'tests'
             }
         }
         stage('sanity tests'){
             steps{
                 unstash 'tests'
                 sh '''
-                    ./Restaurant-k8s-components/tests.sh ${RC_LB}
+                    python Restaurant-k8s-components/tests.py ${RC_LB}
                     exit_status=$?
                     if [ "${exit_status}" -ne 0 ];
                     then
