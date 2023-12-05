@@ -21,12 +21,8 @@ public class TableServiceApplication extends SpringBootServletInitializer {
         SpringApplication.run(TableServiceApplication.class, args);
     }
 
-    private final TableLogic tableLogic;
-
     @Autowired
-    public TableServiceApplication(TableLogic tableLogic){
-        this.tableLogic = tableLogic;
-    }
+    private TableLogic tableLogic;
 
     @GetMapping(path = "/getAllTables")
     public List<Table> getAllTables(){

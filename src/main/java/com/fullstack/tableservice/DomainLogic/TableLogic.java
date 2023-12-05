@@ -12,12 +12,8 @@ import java.util.List;
 @Service
 public class TableLogic {
 
-    TableRepository tableRepository;
-
     @Autowired
-    public TableLogic(TableRepository repository){
-        this.tableRepository = repository;
-    }
+    TableRepository tableRepository;
 
     public List<Table> getAllTables (){
         return tableRepository.findAll();
