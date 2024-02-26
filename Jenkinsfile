@@ -45,7 +45,7 @@ pipeline{
         stage('configure cluster connection'){
             steps{
     	        sh '''
-	                kops export kubecfg --admin --name fullstack.k8s.local
+	                kops export kubecfg --admin --name poc.k8s.local
 	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
 	                kubectl config set-context --current --namespace rc
 	            '''
