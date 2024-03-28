@@ -22,12 +22,9 @@ public class TableServiceApplication extends SpringBootServletInitializer {
     }
 
 
-    private final TableLogic tableLogic;
-
+    //need to use field injection here because tomcat needs a no-args constructor, so constructor autowiring won't work
     @Autowired
-    public TableServiceApplication(TableLogic tableLogic){
-        this.tableLogic = tableLogic;
-    }
+    private TableLogic tableLogic;
 
     @GetMapping(path = "/getAllTables")
     public List<Table> getAllTables(){
