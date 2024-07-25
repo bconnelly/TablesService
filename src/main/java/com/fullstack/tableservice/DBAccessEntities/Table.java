@@ -1,7 +1,6 @@
 package com.fullstack.tableservice.DBAccessEntities;
 
 import lombok.*;
-import org.hibernate.annotations.GenericGenerator;
 
 import jakarta.persistence.*;
 
@@ -17,12 +16,9 @@ public class Table {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @GenericGenerator(name = "native", strategy = "native")
     @Column(name = "id", updatable = false, nullable = false)
     private Integer id;
-    @Column(name = "table_number")
     private Integer tableNumber;
-    @Column(name = "capacity")
     private Integer capacity;
 
     public String toString() {
