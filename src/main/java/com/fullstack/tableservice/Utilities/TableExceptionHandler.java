@@ -16,7 +16,7 @@ public class TableExceptionHandler extends ResponseEntityExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public String exceptionHandler(Exception exception){
-        log.error(exception.getCause() + ", " + exception.getMessage());
+        log.error("{}, {}", exception.getCause(), exception.getMessage());
         return exception.getCause() + ", " + exception.getMessage();
     }
 }
