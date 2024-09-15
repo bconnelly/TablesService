@@ -2,8 +2,8 @@ create table tables
 (
     id integer       auto_increment
         primary key,
-    table_number int null,
-    capacity     int null,
+    table_number int not null,
+    capacity     int not null,
     constraint tables_unique_1 unique (table_number)
 );
 
