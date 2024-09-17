@@ -22,7 +22,8 @@ public class TableLogic {
         return tableRepository.findAll();
     }
 
-    public Boolean tableExists(Integer tableNumber){
+    public Boolean tableExists(Integer tableNumber) throws IllegalArgumentException {
+        if(tableNumber == null || tableNumber < 1) throw new IllegalArgumentException("invalid table number");
         return tableRepository.existsByTableNumber(tableNumber);
     }
 }

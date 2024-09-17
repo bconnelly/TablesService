@@ -14,7 +14,7 @@ class TableLogicTest {
     TableLogic tableLogic;
 
     @Test
-    void getAllTables() {
+    void getAllTablesTest() {
         List<Table> tables = tableLogic.getAllTables();
         assert(tables.get(0).getCapacity().equals(2));
         assert(tables.get(1).getCapacity().equals(2));
@@ -25,7 +25,7 @@ class TableLogicTest {
     }
 
     @Test
-    void tableExists(){
+    void tableExistsTest(){
         assert(tableLogic.tableExists(1));
         assert(tableLogic.tableExists(2));
         assert(tableLogic.tableExists(3));
@@ -34,7 +34,7 @@ class TableLogicTest {
     }
 
     @Test
-    void tableExistsBadTable(){
+    void tableExistsBadTableTest(){
         assert(!tableLogic.tableExists(6));
         assert(!tableLogic.tableExists(0));
         assert(!tableLogic.tableExists(-1));

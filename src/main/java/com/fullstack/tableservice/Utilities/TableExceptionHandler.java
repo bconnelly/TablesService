@@ -17,6 +17,12 @@ public class TableExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public String exceptionHandler(Exception exception){
         log.error("{}, {}", exception.getCause(), exception.getMessage());
-        return exception.getCause() + ", " + exception.getMessage();
+        return exception.getCause() + ", | " + exception.getMessage();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public String illegalArgumentHandler(IllegalArgumentException exception){
+        log.error("{}, {}", exception.getCause(), exception.getMessage());
+        return exception.getCause() + ", invalid input | " + exception.getMessage();
     }
 }
