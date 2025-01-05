@@ -7,6 +7,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @SpringBootTest
 class TableLogicTest {
 
@@ -36,8 +38,8 @@ class TableLogicTest {
     @Test
     void tableExistsBadTableTest(){
         assert(!tableLogic.tableExists(6));
-        assert(!tableLogic.tableExists(0));
-        assert(!tableLogic.tableExists(-1));
-        assert(!tableLogic.tableExists(null));
+        assertThrows(IllegalArgumentException.class, () -> tableLogic.tableExists(0));
+        assertThrows(IllegalArgumentException.class, () -> tableLogic.tableExists(-1));
+        assertThrows(IllegalArgumentException.class, () -> tableLogic.tableExists(null));
     }
 }
