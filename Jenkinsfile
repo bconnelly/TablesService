@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.1'
+            image 'bryan949/poc-agent:0.2.1'
             args '-v /root/.m2:/root/.m2 \
                   -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
