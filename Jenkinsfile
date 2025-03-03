@@ -18,6 +18,10 @@ pipeline{
         stage('maven build and test, docker build and push'){
             steps{
                 sh '''
+                    mvn -v
+                    echo $JAVA_HOME
+                    ls $JAVA_HOME
+                    echo $PATH
                     mvn verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
