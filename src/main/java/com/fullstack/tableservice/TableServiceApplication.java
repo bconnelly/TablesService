@@ -26,13 +26,13 @@ public class TableServiceApplication extends SpringBootServletInitializer {
     @Autowired
     private TableLogic tableLogic;
 
-    @GetMapping(path = "/getAllTables")
+    @GetMapping(path = "/table/all")
     public List<Table> getAllTables(){
         log.debug("getAllTables requested");
         return tableLogic.getAllTables();
     }
 
-    @GetMapping(path = "/tableExists")
+    @GetMapping(path = "/table/exists")
     public Boolean tableExists(Integer tableNumber){
         log.debug("tableExists requested");
         return tableLogic.tableExists(tableNumber);
