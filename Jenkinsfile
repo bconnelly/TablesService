@@ -15,7 +15,7 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('maven build and test'){
+        stage('Maven build and test'){
             steps{
                 sh '''
                     mvn verify
@@ -24,7 +24,7 @@ pipeline{
 
             }
         }
-        stage('build and push docker image'){
+        stage('Build and push docker image'){
             steps{
                 unstash 'tables-repo'
                 sh '''
@@ -41,7 +41,7 @@ pipeline{
                 '''
             }
         }
-        stage('configure cluster connection'){
+        stage('Configure cluster connection'){
             steps{
     	        sh '''
 	                kops export kubecfg --admin --name poc.k8s.local
@@ -50,7 +50,7 @@ pipeline{
 	            '''
             }
         }
-        stage('deploy services to cluster - rc namespace'){
+        stage('Deploy services to cluster - rc namespace'){
             steps{
                 sh '''
                     git clone https://github.com/bconnelly/Restaurant-k8s-components.git
@@ -96,7 +96,7 @@ pipeline{
                 }
             }
         }
-        stage('deploy to cluster - prod namespace'){
+        stage('Deploy to cluster - prod namespace'){
             steps{
                 unstash 'k8s-components'
 
