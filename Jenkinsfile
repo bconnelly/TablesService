@@ -2,12 +2,12 @@ pipeline{
     agent{
         docker{
             image 'bryan949/poc-agent:0.2.1'
-            args '-v /root/.m2:/root/.m2 \
-                  -v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
+//             args '-v /root/.m2:/root/.m2 \
+            args '-v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
                   --env DOCKER_USER=${DOCKER_USER} --env DOCKER_PASS=${DOCKER_PASS} \
-                  --env HOME=/var/lib/jenkins'
+                  --env HOME=/tmp/jenkins_home'
             alwaysPull true
         }
     }
@@ -19,7 +19,7 @@ pipeline{
         stage('Maven build and test'){
             steps{
                 sh '''
-                    mvn verify
+                    mvn -Dmaven.repo.local=$HOME/.m2/repository clean verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
 
