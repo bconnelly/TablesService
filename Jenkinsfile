@@ -2,8 +2,7 @@ pipeline{
     agent{
         docker{
             image 'bryan949/poc-agent:0.2.1'
-//             args '-v /root/.m2:/root/.m2 \
-            args '-v /root/jenkins/restaurant-resources/:/root/jenkins/restaurant-resources/ \
+            args '-v /var/lib/jenkins/restaurant-resources/:/var/lib/jenkins/restaurant-resources/ \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
                   --env DOCKER_USER=${DOCKER_USER} --env DOCKER_PASS=${DOCKER_PASS} \
@@ -29,9 +28,9 @@ pipeline{
             steps{
                 unstash 'tables-repo'
                 sh '''
-                    cp /root/jenkins/restaurant-resources/tomcat-users.xml .
-                    cp /root/jenkins/restaurant-resources/context.xml .
-                    cp /root/jenkins/restaurant-resources/server.xml .
+                    cp /var/lib/jenkins/restaurant-resources/tomcat-users.xml .
+                    cp /var/lib/jenkins/restaurant-resources/context.xml .
+                    cp /var/lib/jenkins/restaurant-resources/server.xml .
 
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
@@ -57,11 +56,11 @@ pipeline{
                     git clone https://github.com/bconnelly/Restaurant-k8s-components.git
 
                     find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
-                    yq -i '.metadata.namespace = "rc"' /root/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' /var/lib/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
                     yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/poc-config.yaml > /dev/null
                     yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
 
-                    kubectl apply -f /root/jenkins/restaurant-resources/poc-secrets.yaml
+                    kubectl apply -f /var/lib/jenkins/restaurant-resources/poc-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/poc-config.yaml
                     kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
@@ -103,12 +102,12 @@ pipeline{
 
                 sh '''
                     find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
-                    yq -i '.metadata.namespace = "prod"' /root/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' /var/lib/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
                     yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/poc-config.yaml > /dev/null
                     yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
 
                     kubectl config set-context --current --namespace prod
-                    kubectl apply -f /root/jenkins/restaurant-resources/poc-secrets.yaml
+                    kubectl apply -f /var/lib/jenkins/restaurant-resources/poc-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
                     kubectl apply -f Restaurant-k8s-components/poc-config.yaml
                     kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
