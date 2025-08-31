@@ -16,7 +16,7 @@ pipeline{
         stage('Maven build and test'){
             steps{
                 sh '''
-                    mvn clean verify
+                    mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
 
