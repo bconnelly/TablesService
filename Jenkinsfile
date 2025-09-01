@@ -20,12 +20,13 @@ pipeline{
                 sh '''
                 echo "---------------------Begin debugging---------------------"
                 whoami
-                echo $HOME
-                ls -ld /home/jenkins
-                ls -ld /home/jenkins/.m2
-                ls -ld /home/jenkins/.m2/repository
-                ls -ld /home/jenkins/workspace
+
                 '''
+//                 echo $HOME
+//                 ls -ld /home/jenkins
+//                                 ls -ld /home/jenkins/.m2
+//                                 ls -ld /home/jenkins/.m2/repository
+//                                 ls -ld /home/jenkins/workspace
             }
         }
         stage('Maven build and test'){
