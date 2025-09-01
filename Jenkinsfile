@@ -19,9 +19,10 @@ pipeline{
             steps{
                 sh '''
                 echo "---------------------Begin debugging---------------------"
-                whoami
+
 
                 '''
+//                 whoami
 //                 echo $HOME
 //                 ls -ld /home/jenkins
 //                                 ls -ld /home/jenkins/.m2
