@@ -32,7 +32,7 @@ pipeline{
 //                                 ls -ld /home/jenkins/workspace
             }
         }
-        stage('Prep workspace')
+        stage('Prep workspace'){
             steps{
                 sh '''
                     chown -R jenkins:jenkins ${WORKSPACE}
