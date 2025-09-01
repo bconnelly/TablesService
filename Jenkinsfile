@@ -13,6 +13,19 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('debug'){
+            steps{
+                sh '''
+                echo "---------------------Begin debugging---------------------"
+                whoami
+                echo $HOME
+                ls -ld /home/jenkins
+                ls -ld /home/jenkins/.m2
+                ls -ld /home/jenkins/.m2/repository
+                ls -ld /home/jenkins/workspace
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
