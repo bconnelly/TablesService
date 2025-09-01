@@ -2,9 +2,11 @@ pipeline{
     agent{
         docker{
             image 'bryan949/poc-agent:0.2.4'
-            args '-u jenkins:jenkins -v /var/run/docker.sock:/var/run/docker.sock \
-                  --privileged --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
-                  --env DOCKER_USER=${DOCKER_USER} --env DOCKER_PASS=${DOCKER_PASS}'
+            args '-v /var/run/docker.sock:/var/run/docker.sock \
+                  --privileged \
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
+                  --env DOCKER_USER=${DOCKER_USER} \
+                  --env DOCKER_PASS=${DOCKER_PASS}'
             alwaysPull true
         }
     }
@@ -43,7 +45,10 @@ pipeline{
                     cp /home/jenkins/restaurant-resources/context.xml .
                     cp /home/jenkins/restaurant-resources/server.xml .
 
-                    docker build -t bryan949/poc-tables .
+                    docker build \
+                    --build-arg JENKINS_UID=$(id -u jenkins) \
+                    --build-arg JENKINS_GID=$(id -g jenkins) \
+                    -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
 
                     rm tomcat-users.xml
