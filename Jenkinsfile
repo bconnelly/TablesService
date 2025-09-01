@@ -32,10 +32,16 @@ pipeline{
 //                                 ls -ld /home/jenkins/workspace
             }
         }
-        stage('Maven build and test'){
+        stage('Prep workspace')
             steps{
                 sh '''
                     chown -R jenkins:jenkins ${WORKSPACE}
+                '''
+            }
+        }
+        stage('Maven build and test'){
+            steps{
+                sh '''
                     mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
