@@ -35,6 +35,7 @@ pipeline{
         stage('Maven build and test'){
             steps{
                 sh '''
+                    chown -R jenkins:jenkins ${WORKSPACE}
                     mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
@@ -49,10 +50,7 @@ pipeline{
                     cp /home/jenkins/restaurant-resources/context.xml .
                     cp /home/jenkins/restaurant-resources/server.xml .
 
-                    docker build \
-                    --build-arg JENKINS_UID=$(id -u jenkins) \
-                    --build-arg JENKINS_GID=$(id -g jenkins) \
-                    -t bryan949/poc-tables .
+                    docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
 
                     rm tomcat-users.xml
