@@ -5,8 +5,10 @@ pipeline{
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
-                  --env DOCKER_USER=${DOCKER_USER} \
-                  --env DOCKER_PASS=${DOCKER_PASS}'
+//                   --env DOCKER_USER=${DOCKER_USER} \
+//                   --env DOCKER_PASS=${DOCKER_PASS} \
+                  -env JENKINS_UID=$(id -u) \
+                  -env JENKINS_GID=$(id -g)'
             alwaysPull true
         }
     }
@@ -17,19 +19,7 @@ pipeline{
     stages{
         stage('debug'){
             steps{
-                sh '''
-                echo "---------------------Begin debugging---------------------"
-                ls -ld /home/jenkins
-                ls -ld /home/jenkins/.m2
-                ls -ld /home/jenkins/.m2/repository
-                ls -ld /home/jenkins/workspace
-                '''
-//                 whoami
-//                 echo $HOME
-//                 ls -ld /home/jenkins
-//                                 ls -ld /home/jenkins/.m2
-//                                 ls -ld /home/jenkins/.m2/repository
-//                                 ls -ld /home/jenkins/workspace
+                sh 'id && whoami && ls -ld /home/jenkins'
             }
         }
         stage('Prep workspace'){
