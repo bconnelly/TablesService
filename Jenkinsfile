@@ -4,11 +4,11 @@ pipeline{
             image 'bryan949/poc-agent:0.2.4'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --e KOPS_STATE_STORE=${KOPS_STATE_STORE} \
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
 //                   --e DOCKER_USER=${DOCKER_USER} \
 //                   --e DOCKER_PASS=${DOCKER_PASS} \
-                  -e JENKINS_UID=${env.JENKINS_UID} \
-                  -e JENKINS_GID=${env.JENKINS_GID}'
+                  -env JENKINS_UID=${env.JENKINS_UID} \
+                  -env JENKINS_GID=${env.JENKINS_GID}'
             alwaysPull true
         }
     }
