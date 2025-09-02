@@ -7,8 +7,8 @@ pipeline{
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
 //                   --e DOCKER_USER=${DOCKER_USER} \
 //                   --e DOCKER_PASS=${DOCKER_PASS} \
-                  -env JENKINS_UID=${env.JENKINS_UID} \
-                  -env JENKINS_GID=${env.JENKINS_GID}'
+                  --env JENKINS_UID=${env.JENKINS_UID} \
+                  --env JENKINS_GID=${env.JENKINS_GID}'
             alwaysPull true
         }
     }
