@@ -4,32 +4,24 @@ pipeline{
             image 'bryan949/poc-agent:0.2.4'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
-                  --env DOCKER_USER=${DOCKER_USER} \
-                  --env DOCKER_PASS=${DOCKER_PASS}'
+                  --e KOPS_STATE_STORE=${KOPS_STATE_STORE} \
+//                   --e DOCKER_USER=${DOCKER_USER} \
+//                   --e DOCKER_PASS=${DOCKER_PASS} \
+                  -e JENKINS_UID=${env.JENKINS_UID} \
+                  -e JENKINS_GID=${env.JENKINS_GID}'
             alwaysPull true
         }
     }
     environment{
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        JENKINS_UID = sh(script: 'id -u', returnStdout: true).trim()
+        JENKINS_GID = sh(script: 'id -g', returnStdout: true).trim()
     }
     stages{
         stage('debug'){
             steps{
-                sh '''
-                echo "---------------------Begin debugging---------------------"
-                ls -ld /home/jenkins
-                ls -ld /home/jenkins/.m2
-                ls -ld /home/jenkins/.m2/repository
-                ls -ld /home/jenkins/workspace
-                '''
-//                 whoami
-//                 echo $HOME
-//                 ls -ld /home/jenkins
-//                                 ls -ld /home/jenkins/.m2
-//                                 ls -ld /home/jenkins/.m2/repository
-//                                 ls -ld /home/jenkins/workspace
+                sh 'id && whoami && ls -ld /home/jenkins'
             }
         }
         stage('Prep workspace'){
