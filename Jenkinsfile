@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.4'
+            image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   -u jenkins \
                   --init \
