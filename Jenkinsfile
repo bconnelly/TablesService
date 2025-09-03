@@ -15,6 +15,20 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('Debug Environment') {
+            steps {
+                sh '''
+                    echo "=== Debug Info ==="
+                    whoami
+                    id
+                    pwd
+                    echo "WORKSPACE: ${WORKSPACE}"
+                    ls -la ${WORKSPACE} || echo "Workspace not accessible"
+                    ps aux || echo "Cannot list processes"
+                    echo "=================="
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
