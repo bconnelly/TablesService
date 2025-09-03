@@ -4,11 +4,8 @@ pipeline{
             image 'bryan949/poc-agent:0.2.4'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
-                  --env JENKINS_UID=$(id -u) \
-                  --env JENKINS_GID=$(id -g)'
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
-            reuseNode true
         }
     }
     environment{
@@ -16,14 +13,6 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('debug'){
-            steps{
-                sh '''
-                    echo "Current UID/GID:"
-                    id && whoami && ls -ld /home/jenkins
-                '''
-            }
-        }
         stage('Prep workspace'){
             steps{
                 sh '''
