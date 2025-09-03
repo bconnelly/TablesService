@@ -14,13 +14,6 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('Prep workspace'){
-            steps{
-                sh '''
-                    chown -R jenkins:jenkins ${WORKSPACE}
-                '''
-            }
-        }
         stage('Maven build and test'){
             steps{
                 sh '''
