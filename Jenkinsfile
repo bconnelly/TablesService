@@ -4,19 +4,16 @@ pipeline{
             image 'bryan949/poc-agent:0.2.4'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
-//                   --e DOCKER_USER=${DOCKER_USER} \
-//                   --e DOCKER_PASS=${DOCKER_PASS} \
-//                   --env JENKINS_UID=${env.JENKINS_UID} \
-//                   --env JENKINS_GID=${env.JENKINS_GID}'
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
+                  --env JENKINS_UID=$(id -u) \
+                  --env JENKINS_GID=$(id -g)'
             alwaysPull true
+            reuseNode true
         }
     }
     environment{
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
-//         JENKINS_UID = sh(script: 'id -u', returnStdout: true).trim()
-//         JENKINS_GID = sh(script: 'id -g', returnStdout: true).trim()
     }
     stages{
         stage('debug'){
