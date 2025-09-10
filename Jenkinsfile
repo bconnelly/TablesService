@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5-A1'
+            image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
                   --user jenkins:jenkins \
