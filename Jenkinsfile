@@ -13,17 +13,6 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('Debug Permissions') {
-            steps {
-                sh '''
-                    echo "Current user: $(whoami)"
-                    echo "User ID: $(id -u)"
-                    echo "Group ID: $(id -g)"
-                    ls -la ${WORKSPACE}
-                    ls -la ${WORKSPACE}/.git || true
-                '''
-            }
-        }
         stage('Maven build and test'){
             steps{
                 sh '''
