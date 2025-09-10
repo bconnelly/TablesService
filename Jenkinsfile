@@ -4,7 +4,6 @@ pipeline{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --user jenkins:jenkins \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
@@ -14,6 +13,18 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('Cleanup and Git Setup'){
+            steps{
+                sh '''
+                    # Fix permissions
+                    chmod -R 777 /var/lib/jenkins/workspace/TablesService/.git || true
+
+                    # Configure Git to avoid lock issues
+                    git config --global --add safe.directory /var/lib/jenkins/workspace/TablesService
+                    git config --global core.fileMode false
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
