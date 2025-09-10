@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5'
+            image 'bryan949/poc-agent:0.2.5-B4'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
@@ -13,11 +13,6 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('Fix Permissions') {
-            steps {
-                sh 'chmod -R 777 ${WORKSPACE} || true'
-            }
-        }
         stage('Maven build and test'){
             steps{
                 sh '''
