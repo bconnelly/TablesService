@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5-B4'
+            image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
@@ -13,6 +13,17 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('Debug Permissions') {
+            steps {
+                sh '''
+                    echo "Current user: $(whoami)"
+                    echo "User ID: $(id -u)"
+                    echo "Group ID: $(id -g)"
+                    ls -la ${WORKSPACE}
+                    ls -la ${WORKSPACE}/.git || true
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
