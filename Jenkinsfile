@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5-211'
+            image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
@@ -13,6 +13,17 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('Configure Git'){
+            steps{
+                sh '''
+                    git config --global core.fileMode false
+                    git config --global --add safe.directory '*'
+                    # Try removing any existing locks
+                    rm -f .git/*.lock
+                    rm -f .git/refs/heads/*.lock
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
