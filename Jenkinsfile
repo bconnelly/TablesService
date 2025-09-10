@@ -13,14 +13,9 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('Clean Workspace') {
+        stage('Fix Permissions') {
             steps {
-                cleanWs()
-            }
-        }
-        stage('Checkout') {
-            steps {
-                checkout scm
+                sh 'chmod -R 777 ${WORKSPACE} || true'
             }
         }
         stage('Maven build and test'){
