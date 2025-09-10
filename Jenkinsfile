@@ -1,9 +1,10 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5'
+            image 'bryan949/poc-agent:0.2.5-A1'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
+                  --user jenkins:jenkins \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
