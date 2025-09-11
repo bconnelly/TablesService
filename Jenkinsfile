@@ -17,7 +17,7 @@ pipeline{
                 sh '''
                     # Clone fresh without using Jenkins Git plugin
                     cd ${WORKSPACE}
-                    rm -rf * .git
+                    rm -rf * .git .mvn
                     git clone https://github.com/bconnelly/TablesService .
 
                     # Build
