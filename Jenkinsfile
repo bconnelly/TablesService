@@ -13,6 +13,21 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('Clean Git Lock') {
+            steps {
+                sh '''
+                    # Force remove any git lock files
+                    find ${WORKSPACE} -name "*.lock" -type f -delete || true
+                    rm -f ${WORKSPACE}/.git/config.lock || true
+                    rm -f ${WORKSPACE}/.git/index.lock || true
+
+                    # If .git exists and we can't write to it, remove it entirely
+                    if [ -d "${WORKSPACE}/.git" ]; then
+                        rm -rf ${WORKSPACE}/.git || sudo rm -rf ${WORKSPACE}/.git || true
+                    fi
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
