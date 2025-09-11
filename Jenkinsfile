@@ -2,22 +2,24 @@ pipeline{
     agent{
         docker{
             image 'bryan949/poc-agent:0.2.5'
-            args '''-v /var/run/docker.sock:/var/run/docker.sock \
+            args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  -v ${WORKSPACE}:/workspace:Z \
-                  -w /workspace \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'''
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
+    }
+    environment{
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
         stage('Maven build and test'){
             steps{
                 sh '''
-                    cd /workspace
                     mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
+
             }
         }
         stage('Build and push docker image'){
