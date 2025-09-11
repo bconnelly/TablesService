@@ -8,24 +8,14 @@ pipeline{
             alwaysPull true
         }
     }
-    environment{
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+    options {
+        skipDefaultCheckout(true)
     }
     stages{
-        stage('Clean Git Lock') {
+        stage('Clean and Checkout') {
             steps {
-                sh '''
-                    # Force remove any git lock files
-                    find ${WORKSPACE} -name "*.lock" -type f -delete || true
-                    rm -f ${WORKSPACE}/.git/config.lock || true
-                    rm -f ${WORKSPACE}/.git/index.lock || true
-
-                    # If .git exists and we can't write to it, remove it entirely
-                    if [ -d "${WORKSPACE}/.git" ]; then
-                        rm -rf ${WORKSPACE}/.git || sudo rm -rf ${WORKSPACE}/.git || true
-                    fi
-                '''
+                deleteDir()
+                checkout scm
             }
         }
         stage('Maven build and test'){
