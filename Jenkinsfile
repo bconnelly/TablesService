@@ -9,24 +9,22 @@ pipeline{
             alwaysPull true
         }
     }
-    environment{
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
-    }
     stages{
-        stage('Complete Cleanup and Setup') {
+        stage('Fix Workspace') {
             steps {
                 sh '''
-                    # Nuclear cleanup
+                    # Take full ownership as root
+                    chown -R root:root ${WORKSPACE} || true
                     chmod -R 777 ${WORKSPACE} || true
-                    rm -rf ${WORKSPACE}/* || true
-                    rm -rf ${WORKSPACE}/.git || true
 
-                    # Create .m2 directory with full permissions
-                    mkdir -p /home/jenkins/.m2/repository
-                    chmod -R 777 /home/jenkins/.m2
+                    # Remove ALL git lock files and problematic files
+                    find ${WORKSPACE} -name "*.lock" -delete 2>/dev/null || true
+                    rm -rf ${WORKSPACE}/.git/FETCH_HEAD || true
+                    rm -rf ${WORKSPACE}/.git/config.lock || true
+                    rm -rf ${WORKSPACE}/.git/index.lock || true
 
-                    # Set git config to be permissive
+                    # Mark directory as safe for git
+                    git config --global --add safe.directory ${WORKSPACE}
                     git config --global --add safe.directory '*'
                 '''
             }
@@ -34,28 +32,28 @@ pipeline{
         stage('Maven build and test'){
             steps{
                 sh '''
-                    chmod -R 777 ${WORKSPACE} || true
-                    mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
-                    chmod -R 777 ${WORKSPACE} || true
+                    # Create .m2 directory with proper permissions
+                    mkdir -p /root/.m2
+                    mvn -Dmaven.repo.local=/root/.m2/repository clean verify
                 '''
-                // Don't use stash - copy files directly instead
-                sh 'tar czf /tmp/build-output.tar.gz target/'
+                // IMPORTANT: Exclude .git directory from stash
+                stash name: 'tables-repo', excludes: '.git/**', useDefaultExcludes: false
             }
         }
         stage('Build and push docker image'){
             steps{
+                unstash 'tables-repo'
                 sh '''
-                    # Extract build artifacts
-                    tar xzf /tmp/build-output.tar.gz
-
-                    cp /var/lib/jenkins/restaurant-resources/tomcat-users.xml .
-                    cp /var/lib/jenkins/restaurant-resources/context.xml .
-                    cp /var/lib/jenkins/restaurant-resources/server.xml .
+                    cp /home/jenkins/restaurant-resources/tomcat-users.xml .
+                    cp /home/jenkins/restaurant-resources/context.xml .
+                    cp /home/jenkins/restaurant-resources/server.xml .
 
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
 
-                    rm tomcat-users.xml context.xml server.xml
+                    rm tomcat-users.xml
+                    rm context.xml
+                    rm server.xml
                 '''
             }
         }
