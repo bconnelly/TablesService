@@ -4,6 +4,7 @@ pipeline{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
+                  -u root:root \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
@@ -13,13 +14,27 @@ pipeline{
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
+        stage('Setup Git Config'){
+            steps{
+                sh '''
+                    # Configure git to trust the workspace
+                    git config --global --add safe.directory ${WORKSPACE}
+                    git config --global --add safe.directory '*'
+
+                    # Ensure proper ownership
+                    chown -R root:root ${WORKSPACE} || true
+                '''
+            }
+        }
         stage('Maven build and test'){
             steps{
                 sh '''
-                    mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
+                    # Use root's .m2 directory since we're running as root
+                    mkdir -p /root/.m2
+                    mvn -Dmaven.repo.local=/root/.m2/repository clean verify
                 '''
-                stash name: 'tables-repo', useDefaultExcludes: false
-
+                // Exclude problematic directories from stash
+                stash name: 'tables-repo', excludes: '.git/**,.mvn/**,target/**', useDefaultExcludes: false
             }
         }
         stage('Build and push docker image'){
@@ -51,14 +66,16 @@ pipeline{
         stage('Deploy services to cluster - rc namespace'){
             steps{
                 sh '''
+                    # Clean up any previous clone
+                    rm -rf Restaurant-k8s-components
                     git clone https://github.com/bconnelly/Restaurant-k8s-components.git
 
                     find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
-                    yq -i '.metadata.namespace = "rc"' /var/lib/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' /home/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
                     yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/poc-config.yaml > /dev/null
                     yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
 
-                    kubectl apply -f /var/lib/jenkins/restaurant-resources/poc-secrets.yaml
+                    kubectl apply -f /home/jenkins/restaurant-resources/poc-secrets.yaml
                     kubectl apply -f Restaurant-k8s-components/poc-config.yaml
                     kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
                     kubectl apply -f Restaurant-k8s-components/tables/
@@ -68,8 +85,8 @@ pipeline{
                     if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "failed to deploy to rc namespace" && exit 1; fi
                     sleep 3
                 '''
-                stash includes: 'Restaurant-k8s-components/tables/', name: 'k8s-components'
-                stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/tests.py', name: 'tests'
+                stash includes: 'Restaurant-k8s-components/tables/**', name: 'k8s-components'
+                stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/poc-config.yaml,Restaurant-k8s-components/mysql-external-service.yaml', name: 'tests'
             }
         }
         stage('sanity tests'){
@@ -82,7 +99,7 @@ pipeline{
                     then
                         echo "exit ${exit_status}"
                     fi
-                    '''
+                '''
 
                 withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
                     sh '''
@@ -99,16 +116,20 @@ pipeline{
                 unstash 'k8s-components'
 
                 sh '''
-                    find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
-                    yq -i '.metadata.namespace = "prod"' /var/lib/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
-                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/poc-config.yaml > /dev/null
-                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
+                    # Re-clone to get fresh files if needed
+                    rm -rf Restaurant-k8s-components-prod
+                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git Restaurant-k8s-components-prod
+
+                    find Restaurant-k8s-components-prod/tables -type f -path ./Restaurant-k8s-components-prod/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
+                    yq -i '.metadata.namespace = "prod"' /home/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components-prod/poc-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components-prod/mysql-external-service.yaml > /dev/null
 
                     kubectl config set-context --current --namespace prod
-                    kubectl apply -f /var/lib/jenkins/restaurant-resources/poc-secrets.yaml
-                    kubectl apply -f Restaurant-k8s-components/tables/
-                    kubectl apply -f Restaurant-k8s-components/poc-config.yaml
-                    kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
+                    kubectl apply -f /home/jenkins/restaurant-resources/poc-secrets.yaml
+                    kubectl apply -f Restaurant-k8s-components-prod/tables/
+                    kubectl apply -f Restaurant-k8s-components-prod/poc-config.yaml
+                    kubectl apply -f Restaurant-k8s-components-prod/mysql-external-service.yaml
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
 
@@ -146,10 +167,9 @@ pipeline{
                     disableDeferredWipeout: true)
 
             script{
-                sh 'docker rmi bryan949/poc-tables'
-                sh 'docker image prune'
+                sh 'docker rmi bryan949/poc-tables || true'
+                sh 'docker image prune -f || true'
             }
         }
     }
 }
-//
