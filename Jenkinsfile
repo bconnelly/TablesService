@@ -6,6 +6,7 @@ pipeline{
                   --privileged \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
+            customWorkspace "/tmp/jenkins-${env.BUILD_NUMBER}"
         }
     }
     environment{
