@@ -1,39 +1,27 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5'
+            image 'bryan949/poc-agent:0.2.5-211'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
-                  -v ${HOME}:/host_home:ro'
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
     }
     options {
-        skipDefaultCheckout true
+        skipDefaultCheckout true  // Add this
+    }
+    environment{
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('Manual Checkout'){
+        stage('Checkout'){
             steps{
                 sh '''
-                    # Ensure directory ownership
-                    chown -R root:root .
-                    # Force remove any git artifacts
                     rm -rf .git
-                    # Clone fresh
                     git clone ${GIT_URL} .
-                    git checkout ${GIT_COMMIT}
-                '''
-            }
-        }
-        stage('Configure Git'){
-            steps{
-                sh '''
-                    git config --global core.fileMode false
-                    git config --global --add safe.directory '*'
-                    # Try removing any existing locks
-                    rm -f .git/*.lock
-                    rm -f .git/refs/heads/*.lock
+                    git checkout ${GIT_BRANCH}
                 '''
             }
         }
