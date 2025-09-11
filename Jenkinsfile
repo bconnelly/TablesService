@@ -9,7 +9,7 @@ pipeline{
         stage('Docker build') {
             steps{
                 sh '''
-                    cp /home/jenkins/restaurant-resources/*.xml .
+                    cp /var/lib/jenkins/restaurant-resources/*.xml .
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
                 '''
