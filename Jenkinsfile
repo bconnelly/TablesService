@@ -1,7 +1,7 @@
 pipeline{
     agent{
         docker{
-            image 'bryan949/poc-agent:0.2.5-211'
+            image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
