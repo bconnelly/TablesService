@@ -4,46 +4,152 @@ pipeline{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  -u root:root \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
     }
+    environment{
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+    }
     stages{
-        stage('Clone and Build in Temp') {
-            steps {
+        stage('Maven build and test'){
+            steps{
                 sh '''
-                    # Work in a completely fresh directory
-                    cd /tmp
-                    rm -rf /tmp/build-${BUILD_NUMBER} || true
-                    mkdir -p /tmp/build-${BUILD_NUMBER}
-                    cd /tmp/build-${BUILD_NUMBER}
+                    mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
+                '''
+                stash name: 'tables-repo', useDefaultExcludes: false
 
-                    # Clone fresh (replace with your actual repo URL)
-                    git clone https://github.com/bconnelly/TablesService.git .
-
-                    # Or if you need to use the workspace code, copy it without .git
-                    # cp -r ${WORKSPACE}/* . 2>/dev/null || true
-                    # find . -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
-
-                    # Build
-                    mkdir -p /root/.m2
-                    mvn -Dmaven.repo.local=/root/.m2/repository clean verify
-
-                    # Copy resources
+            }
+        }
+        stage('Build and push docker image'){
+            steps{
+                unstash 'tables-repo'
+                sh '''
                     cp /home/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /home/jenkins/restaurant-resources/context.xml .
                     cp /home/jenkins/restaurant-resources/server.xml .
 
-                    # Build and push Docker image
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
 
-                    # Clean up
-                    cd /
-                    rm -rf /tmp/build-${BUILD_NUMBER}
+                    rm tomcat-users.xml
+                    rm context.xml
+                    rm server.xml
+                '''
+            }
+        }
+        stage('Configure cluster connection'){
+            steps{
+    	        sh '''
+	                kops export kubecfg --admin --name poc.k8s.local
+	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+	                kubectl config set-context --current --namespace rc
+	            '''
+            }
+        }
+        stage('Deploy services to cluster - rc namespace'){
+            steps{
+                sh '''
+                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+
+                    find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
+                    yq -i '.metadata.namespace = "rc"' /var/lib/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/poc-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
+
+                    kubectl apply -f /var/lib/jenkins/restaurant-resources/poc-secrets.yaml
+                    kubectl apply -f Restaurant-k8s-components/poc-config.yaml
+                    kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
+                    kubectl apply -f Restaurant-k8s-components/tables/
+                    kubectl get deployment
+                    kubectl rollout restart deployment tables-deployment
+
+                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "failed to deploy to rc namespace" && exit 1; fi
+                    sleep 3
+                '''
+                stash includes: 'Restaurant-k8s-components/tables/', name: 'k8s-components'
+                stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/tests.py', name: 'tests'
+            }
+        }
+        stage('sanity tests'){
+            steps{
+                unstash 'tests'
+                sh '''
+                    python Restaurant-k8s-components/tests.py ${RC_LB}
+                    exit_status=$?
+                    if [ "${exit_status}" -ne 0 ];
+                    then
+                        echo "exit ${exit_status}"
+                    fi
+                    '''
+
+                withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
+                    sh '''
+                        git checkout rc
+                        git checkout master
+                        git merge rc
+                        git push origin master
+                    '''
+                }
+            }
+        }
+        stage('Deploy to cluster - prod namespace'){
+            steps{
+                unstash 'k8s-components'
+
+                sh '''
+                    find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
+                    yq -i '.metadata.namespace = "prod"' /var/lib/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/poc-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
+
+                    kubectl config set-context --current --namespace prod
+                    kubectl apply -f /var/lib/jenkins/restaurant-resources/poc-secrets.yaml
+                    kubectl apply -f Restaurant-k8s-components/tables/
+                    kubectl apply -f Restaurant-k8s-components/poc-config.yaml
+                    kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
+                    kubectl get deployment
+                    kubectl rollout restart deployment tables-deployment
+
+                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "PROD FAILURE"; fi
+                    sleep 3
                 '''
             }
         }
     }
+    post{
+        failure{
+            unstash 'tables-repo'
+            withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
+                sh '''
+                    git checkout rc
+                    git checkout master
+                    git rev-list --left-right master...rc | while read line
+                    do
+                        COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                        git revert $COMMIT --no-edit
+                    done
+                    git merge rc
+                    git push origin master
+                '''
+            }
+        }
+        always{
+            cleanWs(cleanWhenAborted: true,
+                    cleanWhenFailure: true,
+                    cleanWhenNotBuilt: true,
+                    cleanWhenSuccess: true,
+                    cleanWhenUnstable: true,
+                    cleanupMatrixParent: true,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true)
+
+            script{
+                sh 'docker rmi bryan949/poc-tables'
+                sh 'docker image prune'
+            }
+        }
+    }
 }
+//
