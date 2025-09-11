@@ -4,18 +4,30 @@ pipeline{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
+                  -u root:root \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
     }
-    options {
-        skipDefaultCheckout(true)
-    }
     stages{
-        stage('Clean and Checkout') {
+        stage('Fix Workspace') {
             steps {
-                deleteDir()
-                checkout scm
+                sh '''
+                    # Take ownership of the entire workspace
+                    chown -R root:root ${WORKSPACE} || true
+
+                    # Remove any problematic git files
+                    rm -rf ${WORKSPACE}/.git/config.lock || true
+                    rm -rf ${WORKSPACE}/.git/index.lock || true
+
+                    # Reset git repo if it exists
+                    if [ -d "${WORKSPACE}/.git" ]; then
+                        cd ${WORKSPACE}
+                        git config --global --add safe.directory ${WORKSPACE}
+                        git reset --hard || true
+                        git clean -fdx || true
+                    fi
+                '''
             }
         }
         stage('Maven build and test'){
