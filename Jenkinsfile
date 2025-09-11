@@ -3,8 +3,8 @@ pipeline{
         docker{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
-                  -v ${WORKSPACE}:${WORKSPACE}:rw \
                   --privileged \
+                  --storage-opt size=10G \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
