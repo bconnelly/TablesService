@@ -4,16 +4,28 @@ pipeline{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  --storage-opt size=10G \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE} \
+                  -v ${HOME}:/host_home:ro'
             alwaysPull true
         }
     }
-    environment{
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+    options {
+        skipDefaultCheckout true
     }
     stages{
+        stage('Manual Checkout'){
+            steps{
+                sh '''
+                    # Ensure directory ownership
+                    chown -R root:root .
+                    # Force remove any git artifacts
+                    rm -rf .git
+                    # Clone fresh
+                    git clone ${GIT_URL} .
+                    git checkout ${GIT_COMMIT}
+                '''
+            }
+        }
         stage('Configure Git'){
             steps{
                 sh '''
