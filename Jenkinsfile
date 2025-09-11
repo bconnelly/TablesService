@@ -8,25 +8,11 @@ pipeline{
             alwaysPull true
         }
     }
-    options {
-        skipDefaultCheckout true  // Add this
-    }
     environment{
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
     stages{
-        stage('Checkout'){
-            steps{
-                sh '''
-                    echo "Git URL: $GIT_URL"
-                    echo "Git Branch: $GIT_BRANCH"
-                    rm -rf .git
-                    git clone ${GIT_URL} .
-                    git checkout ${GIT_BRANCH}
-                '''
-            }
-        }
         stage('Maven build and test'){
             steps{
                 sh '''
