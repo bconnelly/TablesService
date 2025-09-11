@@ -2,41 +2,22 @@ pipeline{
     agent{
         docker{
             image 'bryan949/poc-agent:0.2.5'
-            args '-v /var/run/docker.sock:/var/run/docker.sock \
+            args '''-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  -u root:root \
-                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
+                  -v ${WORKSPACE}:/workspace:Z \
+                  -w /workspace \
+                  --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'''
             alwaysPull true
         }
     }
     stages{
-        stage('Fix Workspace') {
-            steps {
-                sh '''
-                    # Take ownership of the entire workspace
-                    chown -R root:root ${WORKSPACE} || true
-
-                    # Remove any problematic git files
-                    rm -rf ${WORKSPACE}/.git/config.lock || true
-                    rm -rf ${WORKSPACE}/.git/index.lock || true
-
-                    # Reset git repo if it exists
-                    if [ -d "${WORKSPACE}/.git" ]; then
-                        cd ${WORKSPACE}
-                        git config --global --add safe.directory ${WORKSPACE}
-                        git reset --hard || true
-                        git clean -fdx || true
-                    fi
-                '''
-            }
-        }
         stage('Maven build and test'){
             steps{
                 sh '''
+                    cd /workspace
                     mvn -Dmaven.repo.local=/home/jenkins/.m2/repository clean verify
                 '''
                 stash name: 'tables-repo', useDefaultExcludes: false
-
             }
         }
         stage('Build and push docker image'){
