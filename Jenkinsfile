@@ -10,50 +10,38 @@ pipeline{
         }
     }
     stages{
-        stage('Fix Workspace') {
+        stage('Clone and Build in Temp') {
             steps {
                 sh '''
-                    # Take full ownership as root
-                    chown -R root:root ${WORKSPACE} || true
-                    chmod -R 777 ${WORKSPACE} || true
+                    # Work in a completely fresh directory
+                    cd /tmp
+                    rm -rf /tmp/build-${BUILD_NUMBER} || true
+                    mkdir -p /tmp/build-${BUILD_NUMBER}
+                    cd /tmp/build-${BUILD_NUMBER}
 
-                    # Remove ALL git lock files and problematic files
-                    find ${WORKSPACE} -name "*.lock" -delete 2>/dev/null || true
-                    rm -rf ${WORKSPACE}/.git/FETCH_HEAD || true
-                    rm -rf ${WORKSPACE}/.git/config.lock || true
-                    rm -rf ${WORKSPACE}/.git/index.lock || true
+                    # Clone fresh (replace with your actual repo URL)
+                    git clone https://github.com/bconnelly/TablesService.git .
 
-                    # Mark directory as safe for git
-                    git config --global --add safe.directory ${WORKSPACE}
-                    git config --global --add safe.directory '*'
-                '''
-            }
-        }
-        stage('Maven build and test'){
-            steps{
-                sh '''
-                    # Create .m2 directory with proper permissions
+                    # Or if you need to use the workspace code, copy it without .git
+                    # cp -r ${WORKSPACE}/* . 2>/dev/null || true
+                    # find . -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+
+                    # Build
                     mkdir -p /root/.m2
                     mvn -Dmaven.repo.local=/root/.m2/repository clean verify
-                '''
-                // IMPORTANT: Exclude .git directory from stash
-                stash name: 'tables-repo', excludes: '.git/**', useDefaultExcludes: false
-            }
-        }
-        stage('Build and push docker image'){
-            steps{
-                unstash 'tables-repo'
-                sh '''
+
+                    # Copy resources
                     cp /home/jenkins/restaurant-resources/tomcat-users.xml .
                     cp /home/jenkins/restaurant-resources/context.xml .
                     cp /home/jenkins/restaurant-resources/server.xml .
 
+                    # Build and push Docker image
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
 
-                    rm tomcat-users.xml
-                    rm context.xml
-                    rm server.xml
+                    # Clean up
+                    cd /
+                    rm -rf /tmp/build-${BUILD_NUMBER}
                 '''
             }
         }
