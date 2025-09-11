@@ -4,7 +4,7 @@ pipeline{
             image 'bryan949/poc-agent:0.2.5'
             args '-v /var/run/docker.sock:/var/run/docker.sock \
                   --privileged \
-                  -u root:root \
+                  -u $(id -u):$(id -g) \
                   --env KOPS_STATE_STORE=${KOPS_STATE_STORE}'
             alwaysPull true
         }
@@ -13,32 +13,18 @@ pipeline{
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
     }
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timestamps()
-    }
     stages{
-        stage('Setup Git Config'){
-            steps{
-                sh '''
-                    # Configure git to trust the workspace
-                    git config --global --add safe.directory ${WORKSPACE}
-                    git config --global --add safe.directory '*'
-
-                    # Ensure proper ownership
-                    chown -R root:root ${WORKSPACE} || true
-                '''
-            }
-        }
         stage('Maven build and test'){
             steps{
                 sh '''
-                    # Use root's .m2 directory since we're running as root
-                    mkdir -p /root/.m2
-                    mvn -Dmaven.repo.local=/root/.m2/repository clean verify
+                    # Use a maven repo directory that the current user can write to
+                    mkdir -p ${WORKSPACE}/.m2/repository
+                    mvn -Dmaven.repo.local=${WORKSPACE}/.m2/repository clean verify
                 '''
-                // Exclude problematic directories from stash
-                stash name: 'tables-repo', excludes: '.git/**,.mvn/**,target/**', useDefaultExcludes: false
+                // Only stash what we need for Docker build, exclude .git and .m2
+                stash name: 'tables-repo',
+                      includes: 'target/**, pom.xml, Dockerfile, src/**',
+                      excludes: '.git/**, .m2/**'
             }
         }
         stage('Build and push docker image'){
@@ -49,64 +35,82 @@ pipeline{
                     cp /home/jenkins/restaurant-resources/context.xml .
                     cp /home/jenkins/restaurant-resources/server.xml .
 
+                    # Ensure we have the WAR file
+                    if [ ! -f TablesService.war ]; then
+                        cp target/*.war TablesService.war || echo "WAR file not found in expected location"
+                    fi
+
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
 
-                    rm tomcat-users.xml
-                    rm context.xml
-                    rm server.xml
+                    rm -f tomcat-users.xml context.xml server.xml
                 '''
             }
         }
         stage('Configure cluster connection'){
             steps{
-    	        sh '''
-	                kops export kubecfg --admin --name poc.k8s.local
-	                if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
-	                kubectl config set-context --current --namespace rc
-	            '''
+                sh '''
+                    kops export kubecfg --admin --name poc.k8s.local
+                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then exit 1; fi
+                    kubectl config set-context --current --namespace rc
+                '''
             }
         }
         stage('Deploy services to cluster - rc namespace'){
             steps{
                 sh '''
-                    # Clean up any previous clone
-                    rm -rf Restaurant-k8s-components
-                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git
+                    # Clone in a subdirectory to avoid conflicts
+                    rm -rf k8s-temp || true
+                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git k8s-temp
 
-                    find Restaurant-k8s-components/tables -type f -path ./Restaurant-k8s-components/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "rc"' $line > /dev/null; done
-                    yq -i '.metadata.namespace = "rc"' /home/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
-                    yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/poc-config.yaml > /dev/null
-                    yq -i '.metadata.namespace = "rc"' Restaurant-k8s-components/mysql-external-service.yaml > /dev/null
+                    cd k8s-temp
+                    find tables -type f -name "*.yaml" | while read line; do
+                        yq -i '.metadata.namespace = "rc"' "$line" > /dev/null
+                    done
 
-                    kubectl apply -f /home/jenkins/restaurant-resources/poc-secrets.yaml
-                    kubectl apply -f Restaurant-k8s-components/poc-config.yaml
-                    kubectl apply -f Restaurant-k8s-components/mysql-external-service.yaml
-                    kubectl apply -f Restaurant-k8s-components/tables/
+                    # Handle files that need to be copied from jenkins resources
+                    cp /home/jenkins/restaurant-resources/k8s-components/poc-secrets.yaml .
+                    yq -i '.metadata.namespace = "rc"' poc-secrets.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' poc-config.yaml > /dev/null
+                    yq -i '.metadata.namespace = "rc"' mysql-external-service.yaml > /dev/null
+
+                    kubectl apply -f poc-secrets.yaml
+                    kubectl apply -f poc-config.yaml
+                    kubectl apply -f mysql-external-service.yaml
+                    kubectl apply -f tables/
                     kubectl get deployment
                     kubectl rollout restart deployment tables-deployment
 
-                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "failed to deploy to rc namespace" && exit 1; fi
+                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then
+                        echo "failed to deploy to rc namespace" && exit 1
+                    fi
                     sleep 3
                 '''
-                stash includes: 'Restaurant-k8s-components/tables/**', name: 'k8s-components'
-                stash includes: 'Restaurant-k8s-components/tests.py,Restaurant-k8s-components/poc-config.yaml,Restaurant-k8s-components/mysql-external-service.yaml', name: 'tests'
+                dir('k8s-temp') {
+                    stash includes: 'tables/**', name: 'k8s-components'
+                    stash includes: 'tests.py,poc-config.yaml,mysql-external-service.yaml', name: 'tests'
+                }
             }
         }
         stage('sanity tests'){
             steps{
-                unstash 'tests'
-                sh '''
-                    python Restaurant-k8s-components/tests.py ${RC_LB}
-                    exit_status=$?
-                    if [ "${exit_status}" -ne 0 ];
-                    then
-                        echo "exit ${exit_status}"
-                    fi
-                '''
+                dir('test-dir') {
+                    unstash 'tests'
+                    sh '''
+                        python tests.py ${RC_LB}
+                        exit_status=$?
+                        if [ "${exit_status}" -ne 0 ]; then
+                            echo "exit ${exit_status}"
+                            exit ${exit_status}
+                        fi
+                    '''
+                }
 
+                // Git operations in the main workspace
                 withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
                     sh '''
+                        git config --global user.email "jenkins@example.com"
+                        git config --global user.name "Jenkins"
                         git checkout rc
                         git checkout master
                         git merge rc
@@ -117,47 +121,63 @@ pipeline{
         }
         stage('Deploy to cluster - prod namespace'){
             steps{
-                unstash 'k8s-components'
+                dir('prod-deploy') {
+                    unstash 'k8s-components'
+                    unstash 'tests'  // Get poc-config.yaml and mysql-external-service.yaml
 
-                sh '''
-                    # Re-clone to get fresh files if needed
-                    rm -rf Restaurant-k8s-components-prod
-                    git clone https://github.com/bconnelly/Restaurant-k8s-components.git Restaurant-k8s-components-prod
+                    sh '''
+                        find tables -type f -name "*.yaml" | while read line; do
+                            yq -i '.metadata.namespace = "prod"' "$line" > /dev/null
+                        done
 
-                    find Restaurant-k8s-components-prod/tables -type f -path ./Restaurant-k8s-components-prod/tables -prune -o -name *.yaml -print | while read line; do yq -i '.metadata.namespace = "prod"' $line > /dev/null; done
-                    yq -i '.metadata.namespace = "prod"' /home/jenkins/restaurant-resources/poc-secrets.yaml > /dev/null
-                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components-prod/poc-config.yaml > /dev/null
-                    yq -i '.metadata.namespace = "prod"' Restaurant-k8s-components-prod/mysql-external-service.yaml > /dev/null
+                        # Copy and update the secrets file
+                        cp /home/jenkins/restaurant-resources/k8s-components/poc-secrets.yaml .
+                        yq -i '.metadata.namespace = "prod"' poc-secrets.yaml > /dev/null
+                        yq -i '.metadata.namespace = "prod"' poc-config.yaml > /dev/null
+                        yq -i '.metadata.namespace = "prod"' mysql-external-service.yaml > /dev/null
 
-                    kubectl config set-context --current --namespace prod
-                    kubectl apply -f /home/jenkins/restaurant-resources/poc-secrets.yaml
-                    kubectl apply -f Restaurant-k8s-components-prod/tables/
-                    kubectl apply -f Restaurant-k8s-components-prod/poc-config.yaml
-                    kubectl apply -f Restaurant-k8s-components-prod/mysql-external-service.yaml
-                    kubectl get deployment
-                    kubectl rollout restart deployment tables-deployment
+                        kubectl config set-context --current --namespace prod
+                        kubectl apply -f poc-secrets.yaml
+                        kubectl apply -f tables/
+                        kubectl apply -f poc-config.yaml
+                        kubectl apply -f mysql-external-service.yaml
+                        kubectl get deployment
+                        kubectl rollout restart deployment tables-deployment
 
-                    if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then echo "PROD FAILURE"; fi
-                    sleep 3
-                '''
+                        if [ -z "$(kops validate cluster | grep ".k8s.local is ready")" ]; then
+                            echo "PROD FAILURE"
+                        fi
+                        sleep 3
+                    '''
+                }
             }
         }
     }
     post{
         failure{
-            unstash 'tables-repo'
-            withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
-                sh '''
-                    git checkout rc
-                    git checkout master
-                    git rev-list --left-right master...rc | while read line
-                    do
-                        COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
-                        git revert $COMMIT --no-edit
-                    done
-                    git merge rc
-                    git push origin master
-                '''
+            script {
+                // Only try to unstash if the stash exists
+                try {
+                    unstash 'tables-repo'
+                } catch (Exception e) {
+                    echo "Could not unstash tables-repo: ${e.message}"
+                }
+
+                withCredentials([gitUsernamePassword(credentialsId: 'GITHUB_USERPASS', gitToolName: 'Default')]) {
+                    sh '''
+                        git config --global user.email "jenkins@example.com"
+                        git config --global user.name "Jenkins"
+                        git checkout rc
+                        git checkout master
+                        git rev-list --left-right master...rc | while read line
+                        do
+                            COMMIT=$(echo $line | sed 's/[^0-9a-f]*//g')
+                            git revert $COMMIT --no-edit
+                        done
+                        git merge rc
+                        git push origin master
+                    '''
+                }
             }
         }
         always{
