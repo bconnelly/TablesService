@@ -29,9 +29,9 @@ pipeline{
             steps{
                 sh '''
                     # Files are already in workspace, no unstash needed
-                    cp /var/lib/jenkins/restaurant-resources/tomcat-users.xml .
-                    cp /var/lib/restaurant-resources/context.xml .
-                    cp /var/lib/restaurant-resources/server.xml .
+                    cp /home/jenkins/jenkins/restaurant-resources/tomcat-users.xml .
+                    cp /home/jenkins/restaurant-resources/context.xml .
+                    cp /home/jenkins/restaurant-resources/server.xml .
 
                     docker build -t bryan949/poc-tables .
                     docker push bryan949/poc-tables:latest
