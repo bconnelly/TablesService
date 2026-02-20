@@ -21,8 +21,6 @@ public class TableServiceApplication extends SpringBootServletInitializer {
         SpringApplication.run(TableServiceApplication.class, args);
     }
 
-
-    //need to use field injection here because tomcat needs a no-args constructor, so constructor autowiring won't work
     @Autowired
     private TableLogic tableLogic;
 

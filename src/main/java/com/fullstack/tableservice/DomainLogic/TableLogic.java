@@ -13,7 +13,6 @@ public class TableLogic {
 
     private final TableRepository tableRepository;
 
-
     public TableLogic(TableRepository tableRepository){
         this.tableRepository = tableRepository;
     }

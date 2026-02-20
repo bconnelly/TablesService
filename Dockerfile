@@ -1,22 +1,25 @@
-FROM eclipse-temurin:21.0.6_7-jdk
-SHELL ["/bin/bash", "-c"]
+# Build stage
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY pom.xml .
+# Download dependencies separately to leverage Docker layer cache
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn clean package -DskipTests -B
 
-ENV TOMCAT_VERSION=11.0.4
+# Runtime stage
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
 
-RUN useradd -m -U -d /opt/tomcat -s /bin/false tomcat
-RUN wget https://archive.apache.org/dist/tomcat/tomcat-11/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz && \
-    tar -xf apache-tomcat-$TOMCAT_VERSION.tar.gz -C /opt/tomcat && \
-    rm apache-tomcat-$TOMCAT_VERSION.tar.gz && \
-    chown -R tomcat: /opt/tomcat
+RUN groupadd --system appgroup && \
+    useradd --system --gid appgroup appuser
 
-COPY TablesService.war /opt/tomcat/apache-tomcat-$TOMCAT_VERSION/webapps
-COPY tomcat-users.xml /opt/tomcat/apache-tomcat-$TOMCAT_VERSION/conf
-COPY context.xml /opt/tomcat/apache-tomcat-$TOMCAT_VERSION/webapps/manager/META-INF
-COPY server.xml /opt/tomcat/apache-tomcat-$TOMCAT_VERSION/conf
+COPY --from=build /app/TablesService.war app.war
 
-RUN echo $HOME
-RUN ls -ld $HOME
+RUN chown appuser:appgroup app.war
 
-HEALTHCHECK --interval=30m --timeout=3s CMD curl --fail http://localhost:80 || exit 1
+USER appuser
 
-CMD ["bash", "-c", "/opt/tomcat/apache-tomcat-$TOMCAT_VERSION/bin/catalina.sh run"]
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.war"]
